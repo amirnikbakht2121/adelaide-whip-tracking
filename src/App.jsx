@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css'
 
 const supabase = createClient(
   'https://omkbvddqcojspbabibac.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ta2J2ZGRxY29qc3BiYWJpYmFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc3MDkxODUsImV4cCI6MjA1MzI4NTE4NX0.qC9OIKI4a6bCkNFSpG0n1s0m0J3IcrhXshTAVnZbcdk'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ta2J2ZGRxY29qc3BiYWJpYmFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODA4MTUsImV4cCI6MjA4OTE1NjgxNX0.jnUgSoAoLQswCeHzn8aKpsKtSWIHn1iG27J2FC4xuSM'
 )
 
 const STATUS_LABELS = {
