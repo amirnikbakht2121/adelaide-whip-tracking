@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 const supabase = createClient(
   'https://omkbvddqcojspbabibac.supabase.co',
@@ -8,13 +11,32 @@ const supabase = createClient(
 
 const STATUS_CONFIG = {
   pending: { label: 'Order Received', sub: 'We\'ve received your order', icon: '📋', color: '#f59e0b' },
-  preparing: { label: 'Preparing Your Order', sub: 'Your items are being packed', icon: '🧊', color: '#334FB4' },
-  out_for_delivery: { label: 'On The Way', sub: 'Your driver is heading to you', icon: '🚗', color: '#334FB4' },
+  preparing: { label: 'Preparing Your Order', sub: 'Your items are being packed', icon: '🧊', color: '#4A7BF7' },
+  out_for_delivery: { label: 'On The Way', sub: 'Your driver is heading to you', icon: '🚗', color: '#4A7BF7' },
   arrived: { label: 'Driver Arrived', sub: 'Your driver is outside', icon: '📍', color: '#22c55e' },
   delivered: { label: 'Delivered', sub: 'Enjoy your order!', icon: '✅', color: '#22c55e' },
 }
 
 const STEPS = ['pending', 'preparing', 'out_for_delivery', 'arrived', 'delivered']
+
+const pinIcon = L.divIcon({
+  html: '<div style="font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6))">📍</div>',
+  iconSize: [32, 32],
+  iconAnchor: [16, 28],
+  className: '',
+})
+
+function MapFitter({ pos }) {
+  const map = useMap()
+  const fitted = useRef(false)
+  useEffect(() => {
+    if (!fitted.current && pos) {
+      map.setView([pos.lat, pos.lng], 15)
+      fitted.current = true
+    }
+  }, [pos, map])
+  return null
+}
 
 export default function App() {
   const [order, setOrder] = useState(null)
@@ -61,9 +83,9 @@ export default function App() {
     return () => supabase.removeChannel(channel)
   }, [order?.assigned_driver])
 
-  // Calculate ETA
+  // Calculate ETA from driver position
   useEffect(() => {
-    if (!driverPos || !order?.delivery_lat || !order?.delivery_lng) return
+    if (!driverPos || !order?.delivery_lat || !order?.delivery_lng) { setEta(null); return }
     if (order.status === 'delivered' || order.status === 'arrived') { setEta(null); return }
     const R = 6371
     const dLat = (order.delivery_lat - driverPos.lat) * Math.PI / 180
@@ -76,7 +98,7 @@ export default function App() {
   if (loading) return (
     <div className="page-wrap center-content">
       <div className="spinner" />
-      <p style={{ color: '#999', marginTop: 12 }}>Loading your order...</p>
+      <p style={{ color: '#666', marginTop: 12 }}>Loading your order...</p>
     </div>
   )
 
@@ -89,13 +111,21 @@ export default function App() {
 
   const currentStep = STEPS.indexOf(order.status)
   const status = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending
+  const deliveryPos = order.delivery_lat && order.delivery_lng
+    ? { lat: order.delivery_lat, lng: order.delivery_lng }
+    : null
 
   return (
     <div className="page-wrap">
+      {/* Announcement Bar */}
+      <div className="announcement-bar">
+        Adelaide Whip &middot; Live Order Tracking
+      </div>
+
       {/* Header */}
       <header className="header">
-        <h1 className="logo">Adelaide Whip</h1>
-        <span className="header-badge">Live Tracking</span>
+        <h1 className="logo">Adelaide<span>Whip</span></h1>
+        <span className="header-badge">TRACKING</span>
       </header>
 
       {/* Status Card */}
@@ -108,7 +138,7 @@ export default function App() {
       </div>
 
       {/* ETA Card */}
-      {eta && order.status === 'out_for_delivery' && (
+      {eta && ['out_for_delivery', 'preparing'].includes(order.status) && (
         <div className="eta-card">
           <div className="eta-number">{eta}</div>
           <div className="eta-label">
@@ -122,6 +152,25 @@ export default function App() {
         <div className="eta-card arrived">
           <span style={{ fontSize: 28 }}>📍</span>
           <p className="arrived-text">Your driver is waiting outside</p>
+        </div>
+      )}
+
+      {/* Map — delivery pinpoint only */}
+      {deliveryPos && (
+        <div className="map-container">
+          <MapContainer
+            center={[deliveryPos.lat, deliveryPos.lng]}
+            zoom={15}
+            style={{ height: '100%', width: '100%' }}
+            zoomControl={false}
+            attributionControl={false}
+          >
+            <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+            <Marker position={[deliveryPos.lat, deliveryPos.lng]} icon={pinIcon}>
+              <Popup>Delivery Location</Popup>
+            </Marker>
+            <MapFitter pos={deliveryPos} />
+          </MapContainer>
         </div>
       )}
 
@@ -155,7 +204,7 @@ export default function App() {
       )}
 
       {/* Order Items */}
-      <div className="detail-card">
+      <div className="detail-card" style={{ marginBottom: 20 }}>
         <p className="detail-title">Order Summary</p>
         {(order.items || []).map((item, i) => (
           <div key={i} className="item-row">

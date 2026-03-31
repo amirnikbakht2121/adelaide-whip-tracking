@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap');
 
 * {
   margin: 0;
@@ -8,8 +8,8 @@
 
 body {
   font-family: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #fafafa;
-  color: #111;
+  background: #0d0d0d;
+  color: #fff;
   min-height: 100vh;
 }
 
@@ -19,7 +19,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: #111;
 }
 
 .center-content {
@@ -31,49 +31,64 @@ body {
 .spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #e5e5e5;
-  border-top-color: #334FB4;
+  border: 3px solid #333;
+  border-top-color: #4A7BF7;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg) } }
+
+/* Announcement Bar */
+.announcement-bar {
+  background: #4A7BF7;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
 
 /* Header */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
-  background: #242833;
-  border-bottom: none;
+  padding: 14px 20px;
+  background: #1a1a2e;
+  border-bottom: 1px solid #ffffff10;
 }
 
 .logo {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
   color: #fff;
   letter-spacing: -0.5px;
 }
 
+.logo span {
+  color: #4A7BF7;
+}
+
 .header-badge {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   color: #fff;
-  background: #334FB4;
-  padding: 5px 12px;
+  background: #4A7BF7;
+  padding: 5px 14px;
   border-radius: 20px;
 }
 
 /* Status Card */
 .status-card {
-  margin: 16px 20px;
+  margin: 16px 16px 0;
   padding: 18px 20px;
-  border-radius: 14px;
-  background: #242833;
-  border: none;
-  border-left: 4px solid #334FB4;
+  border-radius: 16px;
+  background: #1a1a2e;
+  border: 1px solid #ffffff10;
+  border-left: 4px solid #4A7BF7;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -91,29 +106,29 @@ body {
 
 .status-sub {
   font-size: 13px;
-  color: #aaa;
+  color: #888;
   margin-top: 2px;
 }
 
 /* ETA Card */
 .eta-card {
-  margin: 0 20px 16px;
+  margin: 12px 16px 0;
   padding: 20px;
-  border-radius: 14px;
-  background: #334FB4;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4A7BF7 0%, #3358c4 100%);
   color: #fff;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
 .eta-card.arrived {
-  background: #22c55e;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
 }
 
 .eta-number {
-  font-size: 42px;
-  font-weight: 700;
+  font-size: 48px;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -123,7 +138,7 @@ body {
 }
 
 .eta-label span:first-child {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
 }
 
@@ -138,23 +153,35 @@ body {
   font-weight: 700;
 }
 
+/* Map */
+.map-container {
+  margin: 12px 16px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  height: 240px;
+  border: 1px solid #ffffff10;
+}
+
+.leaflet-container {
+  background: #1a1a2e !important;
+}
+
 /* Progress Section */
 .progress-section {
-  padding: 0 20px;
-  margin-bottom: 20px;
+  padding: 16px 16px 0;
 }
 
 .progress-bar-bg {
   height: 4px;
-  background: #e5e5e5;
+  background: #2a2a3e;
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: #334FB4;
+  background: linear-gradient(90deg, #4A7BF7, #7c5cf7);
   border-radius: 4px;
   transition: width 0.6s ease;
 }
@@ -175,8 +202,8 @@ body {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #e5e5e5;
-  border: 2px solid #ddd;
+  background: #2a2a3e;
+  border: 2px solid #3a3a4e;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,43 +215,43 @@ body {
 }
 
 .progress-step.done .step-dot {
-  background: #334FB4;
-  border-color: #334FB4;
+  background: #4A7BF7;
+  border-color: #4A7BF7;
 }
 
 .step-label {
   font-size: 9px;
-  color: #bbb;
+  color: #555;
   text-align: center;
   line-height: 1.2;
   font-weight: 600;
 }
 
 .progress-step.done .step-label {
-  color: #555;
+  color: #aaa;
 }
 
 /* Detail Cards */
 .detail-card {
-  margin: 0 20px 16px;
+  margin: 12px 16px 0;
   padding: 16px;
-  border-radius: 14px;
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
+  border-radius: 16px;
+  background: #1a1a2e;
+  border: 1px solid #ffffff10;
 }
 
 .detail-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  color: #999;
+  color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   margin-bottom: 10px;
 }
 
 .detail-value {
   font-size: 14px;
-  color: #333;
+  color: #ccc;
   line-height: 1.5;
 }
 
@@ -233,7 +260,7 @@ body {
   display: flex;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #ffffff08;
 }
 
 .item-row:last-of-type {
@@ -242,7 +269,7 @@ body {
 
 .item-qty {
   font-size: 12px;
-  color: #999;
+  color: #666;
   min-width: 28px;
   font-weight: 600;
 }
@@ -250,12 +277,12 @@ body {
 .item-name {
   flex: 1;
   font-size: 14px;
-  color: #333;
+  color: #ccc;
 }
 
 .item-price {
   font-size: 14px;
-  color: #666;
+  color: #888;
   font-weight: 600;
 }
 
@@ -264,22 +291,22 @@ body {
   justify-content: space-between;
   padding-top: 12px;
   margin-top: 8px;
-  border-top: 2px solid #e5e5e5;
+  border-top: 1px solid #ffffff15;
   font-size: 16px;
   font-weight: 700;
-  color: #111;
+  color: #fff;
 }
 
 /* Footer */
 .footer {
   margin-top: auto;
-  padding: 20px;
+  padding: 20px 16px;
   text-align: center;
-  background: #242833;
-  border-top: none;
+  background: #1a1a2e;
+  border-top: 1px solid #ffffff10;
 }
 
 .footer p {
   font-size: 12px;
-  color: #888;
+  color: #555;
 }
