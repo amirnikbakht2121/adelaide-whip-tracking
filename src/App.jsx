@@ -83,16 +83,42 @@ export default function App() {
     return () => supabase.removeChannel(channel)
   }, [order?.assigned_driver])
 
-  // Calculate ETA from driver position
+  // Calculate ETA using Google Distance Matrix via Supabase edge function
+  const etaTimerRef = useRef(null)
   useEffect(() => {
     if (!driverPos || !order?.delivery_lat || !order?.delivery_lng) { setEta(null); return }
     if (order.status === 'delivered' || order.status === 'arrived') { setEta(null); return }
-    const R = 6371
-    const dLat = (order.delivery_lat - driverPos.lat) * Math.PI / 180
-    const dLon = (order.delivery_lng - driverPos.lng) * Math.PI / 180
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(driverPos.lat * Math.PI / 180) * Math.cos(order.delivery_lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2
-    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    setEta(Math.max(1, Math.round((dist / 40) * 60)))
+
+    const fetchEta = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('getETA', {
+          body: {
+            originLat: driverPos.lat,
+            originLng: driverPos.lng,
+            destLat: order.delivery_lat,
+            destLng: order.delivery_lng,
+          },
+        })
+        if (data?.minutes) {
+          setEta(data.minutes)
+        }
+      } catch {
+        // Fallback to haversine if API fails
+        const R = 6371
+        const dLat = (order.delivery_lat - driverPos.lat) * Math.PI / 180
+        const dLon = (order.delivery_lng - driverPos.lng) * Math.PI / 180
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(driverPos.lat * Math.PI / 180) * Math.cos(order.delivery_lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2
+        const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        setEta(Math.max(1, Math.round((dist / 40) * 60)))
+      }
+    }
+
+    fetchEta()
+    // Refresh ETA every 30 seconds
+    if (etaTimerRef.current) clearInterval(etaTimerRef.current)
+    etaTimerRef.current = setInterval(fetchEta, 30000)
+
+    return () => { if (etaTimerRef.current) clearInterval(etaTimerRef.current) }
   }, [driverPos, order])
 
   if (loading) return (
