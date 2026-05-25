@@ -265,20 +265,17 @@ export default function App() {
         </div>
       )}
 
-      {/* Order Items */}
+      {/* Order Items — no prices on tracking. Customer already paid; the
+          confirmation email/Shopify receipt has the financial detail. The
+          tracking page is for delivery progress, not re-litigating spend. */}
       <div className="detail-card">
         <p className="detail-title">Your Order</p>
         {(order.items || []).map((item, i) => (
           <div key={i} className="item-row">
             <span className="item-qty">{item.quantity}×</span>
             <span className="item-name">{item.name}</span>
-            <span className="item-price">${(item.price * item.quantity).toFixed(2)}</span>
           </div>
         ))}
-        <div className="total-row">
-          <span className="label">Total</span>
-          <span className="amount">${(order.total_price || order.total || 0).toFixed(2)}</span>
-        </div>
       </div>
 
       <footer className="footer">
