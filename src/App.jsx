@@ -45,7 +45,8 @@ function MapFitter({ pos }) {
 
 export default function App() {
   const [order, setOrder] = useState(null)
-  const [driverPos, setDriverPos] = useState(null)
+  // No driverPos state — driver coordinates are never sent to the client.
+  // ETA comes from getTrackingEta which does the route calc server-side.
   const [eta, setEta] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -76,7 +77,6 @@ export default function App() {
       const data = Array.isArray(rows) ? rows[0] : rows
       if (err || !data) { setError('Order not found'); } else {
         setOrder(data)
-        if (data.driver_lat && data.driver_lng) setDriverPos({ lat: data.driver_lat, lng: data.driver_lng })
       }
       setLoading(false)
     }
@@ -86,43 +86,35 @@ export default function App() {
     return () => { cancelled = true; clearInterval(interval) }
   }, [orderId])
 
-  // Calculate ETA using Google Distance Matrix via Supabase edge function
+  // Live ETA via the server-side `getTrackingEta` edge function. The fn
+  // resolves driver position internally (from driver_locations), falls
+  // back to warehouse position when the driver isn't out yet, and returns
+  // just the minutes — driver coordinates never reach this page.
   const etaTimerRef = useRef(null)
   useEffect(() => {
-    if (!driverPos || !order?.delivery_lat || !order?.delivery_lng) { setEta(null); return }
-    if (order.status === 'delivered' || order.status === 'arrived') { setEta(null); return }
+    if (!order?.id) { setEta(null); return }
+    // No ETA on terminal / arrived states
+    if (['delivered', 'cancelled', 'arrived'].includes(order.status)) { setEta(null); return }
 
     const fetchEta = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('getETA', {
-          body: {
-            originLat: driverPos.lat,
-            originLng: driverPos.lng,
-            destLat: order.delivery_lat,
-            destLng: order.delivery_lng,
-          },
+        const { data, error } = await supabase.functions.invoke('getTrackingEta', {
+          body: { order_id: order.id },
         })
-        if (data?.minutes) {
+        if (!error && data?.minutes) {
           setEta(data.minutes)
         }
-      } catch {
-        // Fallback to haversine if API fails
-        const R = 6371
-        const dLat = (order.delivery_lat - driverPos.lat) * Math.PI / 180
-        const dLon = (order.delivery_lng - driverPos.lng) * Math.PI / 180
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(driverPos.lat * Math.PI / 180) * Math.cos(order.delivery_lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2
-        const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        setEta(Math.max(1, Math.round((dist / 40) * 60)))
-      }
+      } catch { /* network blip — keep last ETA */ }
     }
 
     fetchEta()
-    // Refresh ETA every 30 seconds
+    // Refresh ETA every 30s — slow enough to be polite to Google's
+    // Distance Matrix billing, fast enough to feel live.
     if (etaTimerRef.current) clearInterval(etaTimerRef.current)
     etaTimerRef.current = setInterval(fetchEta, 30000)
 
     return () => { if (etaTimerRef.current) clearInterval(etaTimerRef.current) }
-  }, [driverPos, order])
+  }, [order?.id, order?.status])
 
   if (loading) return (
     <div className="page-wrap center-content">
@@ -166,8 +158,10 @@ export default function App() {
         </div>
       </div>
 
-      {/* ETA Card */}
-      {eta && ['out_for_delivery', 'preparing'].includes(order.status) && (
+      {/* ETA Card — shown whenever the server returned a minutes value.
+          getTrackingEta already returns null for terminal/arrived states,
+          so we just check for truthy eta here. */}
+      {eta && (
         <div className="eta-card">
           <div className="eta-number">{eta}</div>
           <div className="eta-label">
