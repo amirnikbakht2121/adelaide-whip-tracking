@@ -88,8 +88,19 @@ export default function App() {
     //
     // Replacing both with a single polling loop against the
     // `get_tracking_order` SECURITY DEFINER RPC. Re-fetches every 10s while
-    // the page is open; cleans up on unmount. driver_lat/lng come along in
-    // the same row so we don't need a separate driver_locations channel.
+    // the page is open; cleans up on unmount.
+    //
+    // Security posture (2026-05-25 hardening):
+    //  - RPC no longer returns driver_email / driver_lat / driver_lng — anyone
+    //    holding a leaked URL can't harvest driver emails or stalk live
+    //    driver position. ETA still comes from getTrackingEta which resolves
+    //    driver pos server-side and only returns minutes.
+    //  - delivery_address / delivery_lat / delivery_lng are masked once
+    //    status='delivered' (NULL'd by the RPC's CASE WHEN). Customer knows
+    //    where they live; post-delivery leak attackers get nothing useful.
+    //  - RPC returns zero rows 5 minutes after delivered_at → tracking URL
+    //    effectively expires. Order row stays in the table for admin/driver
+    //    history; only the public-facing read shuts off.
     //
     // Auto-stop on terminal states (delivered / cancelled): once the order is
     // done the data won't change again, so we cancel the interval. Saves the
