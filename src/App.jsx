@@ -19,8 +19,8 @@ const supabase = createClient(
 const STATUS_CONFIG = {
   pending:          { label: 'Order Received',     sub: 'We\'ve received your order',     icon: '📋', headline: ['Your order is ', 'received'] },
   preparing:        { label: 'Preparing Your Order', sub: 'Your items are being packed',  icon: '🧊', headline: ['Your order is being ', 'prepared'] },
-  out_for_delivery: { label: 'On The Way',         sub: 'Your driver is heading to you',  icon: '🚗', headline: ['Your driver is ', 'on the way'] },
-  arrived:          { label: 'Driver Arrived',     sub: 'Your driver is outside',          icon: '📍', headline: ['Your driver has ', 'arrived'] },
+  out_for_delivery: { label: 'On The Way',         sub: 'Your order is on the way',       icon: '🚗', headline: ['Your order is ', 'on the way'] },
+  arrived:          { label: 'Order Arrived',      sub: 'Your order is outside',          icon: '📍', headline: ['Your order has ', 'arrived'] },
   delivered:        { label: 'Delivered',          sub: 'Enjoy your order',                icon: '✅', headline: ['Your order has been ', 'delivered'] },
 }
 
@@ -240,7 +240,7 @@ export default function App() {
       {isArrived && (
         <div className="eta-card arrived">
           <span className="arrived-icon">📍</span>
-          <p className="arrived-text">Your driver is <em>outside</em></p>
+          <p className="arrived-text">Your order is <em>outside</em></p>
         </div>
       )}
 
