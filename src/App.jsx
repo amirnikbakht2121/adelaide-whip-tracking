@@ -4,9 +4,14 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
+// New Supabase publishable key — the legacy `anon` JWT (eyJ...jnUgSo...)
+// that used to be here was disabled in Supabase Dashboard on 2026-05-15
+// after the original .env leak, so every request was returning 401. The
+// rest of the Creamers stack moved to this key on 2026-04-24; this repo
+// was missed until the 2026-05-25 Shopify-customer tracking debug surfaced it.
 const supabase = createClient(
   'https://omkbvddqcojspbabibac.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ta2J2ZGRxY29qc3BiYWJpYmFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODA4MTUsImV4cCI6MjA4OTE1NjgxNX0.jnUgSoAoLQswCeHzn8aKpsKtSWIHn1iG27J2FC4xuSM'
+  'sb_publishable_COK1H9rVbgURqiJf-Dwkhg_Nd9jd72d'
 )
 
 const STATUS_CONFIG = {
