@@ -167,6 +167,14 @@ export default function App() {
   const isArrived = order.status === 'arrived'
   const isTerminal = order.status === 'delivered' || order.status === 'cancelled'
 
+  // Human-readable order number. Prefer the Shopify order number (#1001 style)
+  // when present — that's what the customer sees in their Shopify email/receipt.
+  // Fall back to a 4-char UUID prefix for non-Shopify orders, matching the
+  // Creamers convention.
+  const orderNumber = order.shopify_order_number
+    ? String(order.shopify_order_number).replace(/^#/, '')
+    : order.id.slice(0, 4).toUpperCase()
+
   return (
     <div className="page-wrap">
       <CloudBackground />
@@ -179,13 +187,13 @@ export default function App() {
         {/* Brand logo PNG ("Let's get adelaide whip" cursive) — file is in
             public/logo.png; Vite serves it at the site root. */}
         <img src="/logo.png" alt="Adelaide Whip" className="logo-img" />
-        <span className="header-badge">Order</span>
+        <span className="header-badge">#{orderNumber}</span>
       </header>
 
       {/* Editorial hero — eyebrow, Fraunces headline with italic emphasis */}
       <section className="hero">
         <div className="eyebrow">
-          Your Order <span className="d">·</span> {STEP_LABELS[order.status] || 'Tracking'}
+          Order #{orderNumber} <span className="d">·</span> {STEP_LABELS[order.status] || 'Tracking'}
         </div>
         <h1>
           {status.headline[0]}<em>{status.headline[1]}</em>
