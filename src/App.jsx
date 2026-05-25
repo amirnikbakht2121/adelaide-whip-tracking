@@ -176,7 +176,9 @@ export default function App() {
       </div>
 
       <header className="header">
-        <div className="logo">Adelaide<span>Whip</span></div>
+        {/* Brand logo PNG ("Let's get adelaide whip" cursive) — file is in
+            public/logo.png; Vite serves it at the site root. */}
+        <img src="/logo.png" alt="Adelaide Whip" className="logo-img" />
         <span className="header-badge">Order</span>
       </header>
 

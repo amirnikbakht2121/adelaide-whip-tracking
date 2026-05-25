@@ -122,6 +122,18 @@ html, body {
   color: var(--blue-deep);
 }
 
+/* Brand logo image — replaces the typeset wordmark. PNG sized to fit a
+   typical mobile header without overpowering. The aspect ratio of the
+   provided file is roughly 2.4:1; if it's swapped for a different shape,
+   adjust max-width / height accordingly. */
+.logo-img {
+  height: 44px;
+  width: auto;
+  max-width: 200px;
+  display: block;
+  object-fit: contain;
+}
+
 .header-badge {
   font-family: 'Inter', sans-serif;
   font-size: 9px;
