@@ -50,38 +50,36 @@ export default function App() {
   useEffect(() => {
     if (!orderId) { setError('No order ID provided'); setLoading(false); return }
 
+    // Tracking-page polling.
+    //
+    // The Adelaide Whip customer is anonymous to Supabase (no Creamers
+    // account), so:
+    //  - A direct `from('orders').select` is blocked by RLS (no owner match).
+    //  - A Realtime `postgres_changes` subscription is ALSO blocked by RLS —
+    //    Supabase Realtime applies SELECT policies before delivering events
+    //    to subscribers. Anon never receives the events.
+    //
+    // Replacing both with a single polling loop against the
+    // `get_tracking_order` SECURITY DEFINER RPC. Re-fetches every 10s while
+    // the page is open; cleans up on unmount. driver_lat/lng come along in
+    // the same row so we don't need a separate driver_locations channel.
+    let cancelled = false
+
     const fetchOrder = async () => {
-      const { data, error: err } = await supabase.from('orders').select('*').eq('id', orderId).single()
+      const { data: rows, error: err } = await supabase.rpc('get_tracking_order', { p_order_id: orderId })
+      if (cancelled) return
+      const data = Array.isArray(rows) ? rows[0] : rows
       if (err || !data) { setError('Order not found'); } else {
         setOrder(data)
         if (data.driver_lat && data.driver_lng) setDriverPos({ lat: data.driver_lat, lng: data.driver_lng })
       }
       setLoading(false)
     }
+
     fetchOrder()
-
-    const channel = supabase
-      .channel(`order-${orderId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
-        setOrder(payload.new)
-        if (payload.new.driver_lat && payload.new.driver_lng) setDriverPos({ lat: payload.new.driver_lat, lng: payload.new.driver_lng })
-      })
-      .subscribe()
-
-    return () => supabase.removeChannel(channel)
+    const interval = setInterval(fetchOrder, 10000)
+    return () => { cancelled = true; clearInterval(interval) }
   }, [orderId])
-
-  // Realtime driver location
-  useEffect(() => {
-    if (!order?.assigned_driver) return
-    const channel = supabase
-      .channel(`driver-loc-${order.assigned_driver}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'driver_locations', filter: `email=eq.${order.assigned_driver}` }, (payload) => {
-        if (payload.new.lat && payload.new.lng) setDriverPos({ lat: payload.new.lat, lng: payload.new.lng })
-      })
-      .subscribe()
-    return () => supabase.removeChannel(channel)
-  }, [order?.assigned_driver])
 
   // Calculate ETA using Google Distance Matrix via Supabase edge function
   const etaTimerRef = useRef(null)
