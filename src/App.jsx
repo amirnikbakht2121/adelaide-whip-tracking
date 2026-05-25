@@ -90,7 +90,17 @@ export default function App() {
     // `get_tracking_order` SECURITY DEFINER RPC. Re-fetches every 10s while
     // the page is open; cleans up on unmount. driver_lat/lng come along in
     // the same row so we don't need a separate driver_locations channel.
+    //
+    // Auto-stop on terminal states (delivered / cancelled): once the order is
+    // done the data won't change again, so we cancel the interval. Saves the
+    // Supabase RPC call every 10s for customers who leave the tab open after
+    // delivery — a real cost on Nano compute when multiple orders close out.
     let cancelled = false
+    let interval = null
+
+    const stopPolling = () => {
+      if (interval) { clearInterval(interval); interval = null }
+    }
 
     const fetchOrder = async () => {
       const { data: rows, error: err } = await supabase.rpc('get_tracking_order', { p_order_id: orderId })
@@ -98,13 +108,16 @@ export default function App() {
       const data = Array.isArray(rows) ? rows[0] : rows
       if (err || !data) { setError('Order not found'); } else {
         setOrder(data)
+        if (data.status === 'delivered' || data.status === 'cancelled') {
+          stopPolling()
+        }
       }
       setLoading(false)
     }
 
     fetchOrder()
-    const interval = setInterval(fetchOrder, 10000)
-    return () => { cancelled = true; clearInterval(interval) }
+    interval = setInterval(fetchOrder, 10000)
+    return () => { cancelled = true; stopPolling() }
   }, [orderId])
 
   // Live ETA via the server-side `getTrackingEta` edge function. The fn
