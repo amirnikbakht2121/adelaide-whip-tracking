@@ -14,15 +14,24 @@ const supabase = createClient(
   'sb_publishable_COK1H9rVbgURqiJf-Dwkhg_Nd9jd72d'
 )
 
+// Editorial copy + Fraunces-italic-friendly headlines. The <em> portion of
+// the headline renders in blue-deep italic, matching the Shopify hero treatment.
 const STATUS_CONFIG = {
-  pending: { label: 'Order Received', sub: 'We\'ve received your order', icon: '📋', color: '#f59e0b' },
-  preparing: { label: 'Preparing Your Order', sub: 'Your items are being packed', icon: '🧊', color: '#4A7BF7' },
-  out_for_delivery: { label: 'On The Way', sub: 'Your driver is heading to you', icon: '🚗', color: '#4A7BF7' },
-  arrived: { label: 'Driver Arrived', sub: 'Your driver is outside', icon: '📍', color: '#22c55e' },
-  delivered: { label: 'Delivered', sub: 'Enjoy your order!', icon: '✅', color: '#22c55e' },
+  pending:          { label: 'Order Received',     sub: 'We\'ve received your order',     icon: '📋', headline: ['Your order is ', 'received'] },
+  preparing:        { label: 'Preparing Your Order', sub: 'Your items are being packed',  icon: '🧊', headline: ['Your order is being ', 'prepared'] },
+  out_for_delivery: { label: 'On The Way',         sub: 'Your driver is heading to you',  icon: '🚗', headline: ['Your driver is ', 'on the way'] },
+  arrived:          { label: 'Driver Arrived',     sub: 'Your driver is outside',          icon: '📍', headline: ['Your driver has ', 'arrived'] },
+  delivered:        { label: 'Delivered',          sub: 'Enjoy your order',                icon: '✅', headline: ['Your order has been ', 'delivered'] },
 }
 
 const STEPS = ['pending', 'preparing', 'out_for_delivery', 'arrived', 'delivered']
+const STEP_LABELS = {
+  pending: 'Received',
+  preparing: 'Preparing',
+  out_for_delivery: 'On the Way',
+  arrived: 'Arrived',
+  delivered: 'Delivered',
+}
 
 const pinIcon = L.divIcon({
   html: '<div style="font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6))">📍</div>',
@@ -41,6 +50,18 @@ function MapFitter({ pos }) {
     }
   }, [pos, map])
   return null
+}
+
+// Background drifting clouds — matches the Shopify hero's atmospheric layer.
+// Soft blurred ovals, slow drift loop, fixed behind everything.
+function CloudBackground() {
+  return (
+    <div className="cloud-bg" aria-hidden="true">
+      <div className="cloud c1" />
+      <div className="cloud c2" />
+      <div className="cloud c3" />
+    </div>
+  )
 }
 
 export default function App() {
@@ -118,15 +139,23 @@ export default function App() {
 
   if (loading) return (
     <div className="page-wrap center-content">
+      <CloudBackground />
       <div className="spinner" />
-      <p style={{ color: '#666', marginTop: 12 }}>Loading your order...</p>
+      <p style={{ color: 'var(--ink-soft)', marginTop: 16, fontSize: 12, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+        Loading your order
+      </p>
     </div>
   )
 
   if (error) return (
     <div className="page-wrap center-content">
-      <p style={{ fontSize: 48, marginBottom: 8 }}>😕</p>
-      <p style={{ color: '#666', fontSize: 16 }}>{error}</p>
+      <CloudBackground />
+      <p style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 32, fontWeight: 300, color: 'var(--ink)', marginBottom: 12 }}>
+        Sorry —
+      </p>
+      <p style={{ color: 'var(--ink-soft)', fontSize: 14, maxWidth: 280, textAlign: 'center', lineHeight: 1.5 }}>
+        {error}
+      </p>
     </div>
   )
 
@@ -135,50 +164,81 @@ export default function App() {
   const deliveryPos = order.delivery_lat && order.delivery_lng
     ? { lat: order.delivery_lat, lng: order.delivery_lng }
     : null
+  const isArrived = order.status === 'arrived'
+  const isTerminal = order.status === 'delivered' || order.status === 'cancelled'
 
   return (
     <div className="page-wrap">
-      {/* Announcement Bar */}
+      <CloudBackground />
+
       <div className="announcement-bar">
-        Adelaide Whip &middot; Live Order Tracking
+        Adelaide Whip <span className="dot">·</span> Live Tracking
       </div>
 
-      {/* Header */}
       <header className="header">
-        <h1 className="logo">Adelaide<span>Whip</span></h1>
-        <span className="header-badge">TRACKING</span>
+        <div className="logo">Adelaide<span>Whip</span></div>
+        <span className="header-badge">Order</span>
       </header>
 
-      {/* Status Card */}
-      <div className="status-card" style={{ borderLeftColor: status.color }}>
-        <span className="status-icon">{status.icon}</span>
-        <div>
-          <h2 className="status-title">{status.label}</h2>
-          <p className="status-sub">{status.sub}</p>
+      {/* Editorial hero — eyebrow, Fraunces headline with italic emphasis */}
+      <section className="hero">
+        <div className="eyebrow">
+          Your Order <span className="d">·</span> {STEP_LABELS[order.status] || 'Tracking'}
         </div>
-      </div>
+        <h1>
+          {status.headline[0]}<em>{status.headline[1]}</em>
+        </h1>
+        <p className="subhead">{status.sub}</p>
+      </section>
 
-      {/* ETA Card — shown whenever the server returned a minutes value.
-          getTrackingEta already returns null for terminal/arrived states,
-          so we just check for truthy eta here. */}
-      {eta && (
+      {/* ETA card — only while pre-arrival */}
+      {eta && !isArrived && !isTerminal && (
         <div className="eta-card">
           <div className="eta-number">{eta}</div>
           <div className="eta-label">
-            <span>min</span>
-            <span className="eta-sub">estimated arrival</span>
+            <span className="unit">min</span>
+            <span className="sub">Estimated Arrival</span>
           </div>
         </div>
       )}
 
-      {order.status === 'arrived' && (
+      {/* Arrived card — dark ink with banner-accent yellow text */}
+      {isArrived && (
         <div className="eta-card arrived">
-          <span style={{ fontSize: 28 }}>📍</span>
-          <p className="arrived-text">Your driver is waiting outside</p>
+          <span className="arrived-icon">📍</span>
+          <p className="arrived-text">Your driver is <em>outside</em></p>
         </div>
       )}
 
-      {/* Map — delivery pinpoint only */}
+      {/* Status row */}
+      <div className="status-card">
+        <span className="status-icon">{status.icon}</span>
+        <div>
+          <div className="status-title">{status.label}</div>
+          <p className="status-sub">{status.sub}</p>
+        </div>
+      </div>
+
+      {/* Progress steps */}
+      <div className="progress-section">
+        <div className="progress-bar-bg">
+          <div className="progress-bar-fill" style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }} />
+        </div>
+        <div className="progress-labels">
+          {STEPS.map((step, i) => {
+            const done = i <= currentStep
+            return (
+              <div key={step} className={`progress-step ${done ? 'done' : ''}`}>
+                <div className="step-dot">{done && '✓'}</div>
+                <span className="step-label">{STEP_LABELS[step]}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Map — delivery pinpoint only. Light-themed Carto tiles match the
+          sky/cream palette; dark map clashed visually. */}
       {deliveryPos && (
         <div className="map-container">
           <MapContainer
@@ -188,7 +248,7 @@ export default function App() {
             zoomControl={false}
             attributionControl={false}
           >
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+            <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
             <Marker position={[deliveryPos.lat, deliveryPos.lng]} icon={pinIcon}>
               <Popup>Delivery Location</Popup>
             </Marker>
@@ -197,54 +257,32 @@ export default function App() {
         </div>
       )}
 
-      {/* Progress Bar */}
-      <div className="progress-section">
-        <div className="progress-bar-bg">
-          <div className="progress-bar-fill" style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }} />
-        </div>
-        <div className="progress-labels">
-          {STEPS.map((step, i) => {
-            const done = i <= currentStep
-            const info = STATUS_CONFIG[step]
-            return (
-              <div key={step} className={`progress-step ${done ? 'done' : ''}`}>
-                <div className="step-dot" style={done ? { background: info.color, borderColor: info.color } : {}}>
-                  {done && '✓'}
-                </div>
-                <span className="step-label">{info.label}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
       {/* Delivery Address */}
       {order.delivery_address && (
         <div className="detail-card">
-          <p className="detail-title">Delivery Address</p>
+          <p className="detail-title">Delivery To</p>
           <p className="detail-value">{order.delivery_address}</p>
         </div>
       )}
 
       {/* Order Items */}
-      <div className="detail-card" style={{ marginBottom: 20 }}>
-        <p className="detail-title">Order Summary</p>
+      <div className="detail-card">
+        <p className="detail-title">Your Order</p>
         {(order.items || []).map((item, i) => (
           <div key={i} className="item-row">
-            <span className="item-qty">{item.quantity}x</span>
+            <span className="item-qty">{item.quantity}×</span>
             <span className="item-name">{item.name}</span>
             <span className="item-price">${(item.price * item.quantity).toFixed(2)}</span>
           </div>
         ))}
         <div className="total-row">
-          <span>Total</span>
-          <span>${(order.total_price || order.total || 0).toFixed(2)}</span>
+          <span className="label">Total</span>
+          <span className="amount">${(order.total_price || order.total || 0).toFixed(2)}</span>
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="footer">
-        <p>Adelaide Whip &middot; Fast Delivery Adelaide</p>
+        <p>Adelaide Whip <span className="d">·</span> Fast Delivery Adelaide</p>
       </footer>
     </div>
   )
