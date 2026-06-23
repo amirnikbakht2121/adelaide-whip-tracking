@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import ChatWidget from './ChatWidget'
 
 // New Supabase publishable key — the legacy `anon` JWT (eyJ...jnUgSo...)
 // that used to be here was disabled in Supabase Dashboard on 2026-05-15
@@ -315,6 +316,12 @@ export default function App() {
       <footer className="footer">
         <p>Adelaide Whip <span className="d">·</span> Fast Delivery Adelaide</p>
       </footer>
+
+      {/* Anonymous, order-scoped live chat — talks only to the
+          post_tracking_message / get_tracking_messages SECURITY DEFINER RPCs.
+          Only available while the order is active (hidden once delivered or
+          cancelled — the SQL expiry only covers delivered, not cancelled). */}
+      <ChatWidget supabase={supabase} orderId={orderId} active={!isTerminal && !!order} />
     </div>
   )
 }
