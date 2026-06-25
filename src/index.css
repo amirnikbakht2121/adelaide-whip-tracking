@@ -24,6 +24,10 @@ html, body {
   background-attachment: fixed;
   color: var(--ink);
   min-height: 100vh;
+  /* Constrain mobile scrolling: kill the rubber-band overscroll so the page
+     can't be dragged past its content, and never allow sideways scroll. */
+  overscroll-behavior: none;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
