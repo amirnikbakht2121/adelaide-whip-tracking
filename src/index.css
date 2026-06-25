@@ -517,6 +517,20 @@ html, body {
 .chat-launcher:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(26, 143, 191, 0.5); }
 .chat-launcher:active { transform: scale(0.96); }
 
+/* Unread dot — appears top-right of the launcher when support has replied and
+   the panel is closed (anonymous visitor, so this is their only nudge). */
+.chat-unread-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--pink-deep);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .chat-panel {
   position: fixed;
   bottom: 86px;

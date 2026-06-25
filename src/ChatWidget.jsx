@@ -21,27 +21,54 @@ export default function ChatWidget({ supabase, orderId, active = false }) {
   const [error, setError] = useState(null)
   const scrollRef = useRef(null)
 
+  // "Seen up to" timestamp, persisted per order so a returning visitor isn't
+  // re-alerted to messages they've already read. Drives the launcher unread dot.
+  const seenKey = orderId ? `aw_chat_seen_${orderId}` : null
+  const [seenAt, setSeenAt] = useState(() => {
+    try { return seenKey ? localStorage.getItem(seenKey) : null } catch { return null }
+  })
+
   const fetchMessages = async () => {
     const { data, error: err } = await supabase.rpc('get_tracking_messages', { p_order_id: orderId })
     if (err || !Array.isArray(data)) return
     setMessages(data)
   }
 
-  // Poll while the panel is open; stop when closed to spare the RPC.
+  // Poll for replies. Fast (5s) while the panel is open; slower (15s) in the
+  // background while it's closed, so the launcher can show an unread dot when a
+  // driver messages — the visitor is anonymous, so there's no push to rely on.
   useEffect(() => {
-    if (!open || !orderId) return
+    if (!orderId || !active) return
     let cancelled = false
     const tick = async () => { if (!cancelled) await fetchMessages() }
     tick()
-    const interval = setInterval(tick, 5000)
+    const interval = setInterval(tick, open ? 5000 : 15000)
     return () => { cancelled = true; clearInterval(interval) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, orderId])
+  }, [open, orderId, active])
 
   // Keep pinned to the newest message.
   useEffect(() => {
     if (open && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [messages, open])
+
+  // While the panel is open, everything is "seen" — advance the marker to the
+  // newest message so the unread dot clears and stays clear.
+  useEffect(() => {
+    if (!open || messages.length === 0) return
+    const latest = messages.reduce((max, m) => (m.created_at > max ? m.created_at : max), '')
+    if (latest && latest !== seenAt) {
+      setSeenAt(latest)
+      try { if (seenKey) localStorage.setItem(seenKey, latest) } catch { /* ignore */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, messages])
+
+  // Unread = any SUPPORT message newer than what we've seen (the visitor's own
+  // 'you' messages never count). Drives the launcher dot while the panel is closed.
+  const hasUnread = messages.some(
+    m => m.role === 'support' && (!seenAt || m.created_at > seenAt)
+  )
 
   const send = async () => {
     const body = draft.trim()
@@ -80,6 +107,7 @@ export default function ChatWidget({ supabase, orderId, active = false }) {
             <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
           </svg>
         )}
+        {!open && hasUnread && <span className="chat-unread-dot" aria-label="New message" />}
       </button>
 
       {/* Panel */}
