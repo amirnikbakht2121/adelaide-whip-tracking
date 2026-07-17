@@ -68,10 +68,20 @@ function CloudBackground() {
 export default function App() {
   const [order, setOrder] = useState(null)
   // No driverPos state — driver coordinates are never sent to the client.
-  // ETA comes from getTrackingEta which does the route calc server-side.
+  // ETA (2026-07-18): PRIMARY source is the server-side QUEUE-STACKED
+  // eta_minutes written by trackingEtaCron (now includes Shopify stops) and
+  // returned by get_tracking_order — it accounts for every delivery ahead of
+  // this one in the driver's queue and refreshes with the 10s order poll.
+  // getTrackingEta (single-leg driver→customer) remains only as the FALLBACK
+  // for orders the cron doesn't cover (unassigned / lone-preparing).
   const [eta, setEta] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Freshness bookkeeping: when the server-stacked ETA is fresh we skip the
+  // fallback edge call entirely; and if NO source has produced a number for a
+  // while, the stale figure is cleared instead of frozen on screen forever.
+  const serverEtaFreshRef = useRef(false)
+  const lastEtaAtRef = useRef(null)
 
   const orderId = new URLSearchParams(window.location.search).get('order_id')
 
@@ -120,6 +130,28 @@ export default function App() {
       const data = Array.isArray(rows) ? rows[0] : rows
       if (err || !data) { setError('Order not found'); } else {
         setOrder(data)
+
+        // ── Queue-stacked server ETA (primary) ──────────────────────────
+        // trackingEtaCron writes cumulative eta_minutes for every stop on
+        // the driver's run (all deliveries ahead + 3 min service each, plus
+        // restock detours). Trust it only while FRESH — the cron runs every
+        // minute and re-kicks on status changes, so anything older than
+        // 3 min means the pipeline isn't covering this order right now.
+        const freshServerEta =
+          data.eta_minutes != null &&
+          data.eta_updated_at &&
+          Date.now() - new Date(data.eta_updated_at).getTime() < 3 * 60 * 1000
+        serverEtaFreshRef.current = freshServerEta
+        if (freshServerEta && !['delivered', 'cancelled', 'arrived'].includes(data.status)) {
+          setEta(data.eta_minutes)
+          lastEtaAtRef.current = Date.now()
+        } else if (lastEtaAtRef.current && Date.now() - lastEtaAtRef.current > 4 * 60 * 1000) {
+          // No source has refreshed the number in >4 min (failing edge fn,
+          // stranded driver) — clear it rather than showing a frozen ETA.
+          setEta(null)
+          lastEtaAtRef.current = null
+        }
+
         if (data.status === 'delivered' || data.status === 'cancelled') {
           stopPolling()
         }
@@ -143,14 +175,21 @@ export default function App() {
     if (['delivered', 'cancelled', 'arrived'].includes(order.status)) { setEta(null); return }
 
     const fetchEta = async () => {
+      // The queue-stacked server ETA is live and fresh — it already covers
+      // this order (and refreshes with the 10s order poll), so skip the
+      // single-leg fallback entirely (it's queue-blind AND costs a Google
+      // Distance Matrix call per invoke).
+      if (serverEtaFreshRef.current) return
       try {
         const { data, error } = await supabase.functions.invoke('getTrackingEta', {
           body: { order_id: order.id },
         })
+        if (serverEtaFreshRef.current) return // server ETA arrived mid-flight — it wins
         if (!error && data?.minutes) {
           setEta(data.minutes)
+          lastEtaAtRef.current = Date.now()
         }
-      } catch { /* network blip — keep last ETA */ }
+      } catch { /* network blip — keep last ETA (stale gate clears it eventually) */ }
     }
 
     fetchEta()
@@ -235,6 +274,14 @@ export default function App() {
             <span className="sub">Estimated Arrival</span>
           </div>
         </div>
+      )}
+
+      {/* Queue position — honest "why the wait" while queued behind other
+          stops on the driver's run (queue_position is 1-based; 1 = next). */}
+      {order.status === 'preparing' && order.queue_position > 1 && (
+        <p style={{ textAlign: 'center', color: 'var(--ink-soft)', fontSize: 12, marginTop: -6, marginBottom: 14 }}>
+          {order.queue_position - 1} deliver{order.queue_position - 1 === 1 ? 'y' : 'ies'} ahead of you
+        </p>
       )}
 
       {/* Arrived card — dark ink with banner-accent yellow text */}
