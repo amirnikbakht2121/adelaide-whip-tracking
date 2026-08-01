@@ -659,25 +659,32 @@ html, body {
 
 .chat-input {
   display: flex;
-  align-items: center;
+  /* flex-end, not center: the compose box grows upward with the text and the
+     send button should stay pinned to its bottom edge. */
+  align-items: flex-end;
   gap: 8px;
   padding: 12px;
   border-top: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.5);
   flex-shrink: 0;
 }
-.chat-input input {
+/* textarea (auto-grow) — `input` kept in the selector so an older cached
+   bundle still picks up the styling. */
+.chat-input input,
+.chat-input textarea {
   flex: 1;
   border: 1px solid var(--line-strong);
   background: #fff;
-  border-radius: 999px;
+  border-radius: 20px;
   padding: 10px 16px;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
+  line-height: 1.45;
   color: var(--ink);
   outline: none;
 }
-.chat-input input:focus { border-color: var(--blue-deep); }
+.chat-input input:focus,
+.chat-input textarea:focus { border-color: var(--blue-deep); }
 .chat-input button {
   width: 40px;
   height: 40px;

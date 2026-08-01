@@ -17,6 +17,7 @@ export default function ChatWidget({ supabase, orderId, active = false }) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
+  const draftRef = useRef(null) // auto-grow compose box (height reset on send)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
   const scrollRef = useRef(null)
@@ -79,6 +80,8 @@ export default function ChatWidget({ supabase, orderId, active = false }) {
     setSending(false)
     if (err) { setError("Couldn't send — please try again."); return }
     setDraft('')
+    // Clearing state doesn't fire onChange, so reset the grown height by hand.
+    if (draftRef.current) draftRef.current.style.height = 'auto'
     fetchMessages()
   }
 
@@ -148,13 +151,22 @@ export default function ChatWidget({ supabase, orderId, active = false }) {
           {error && <p className="chat-error">{error}</p>}
 
           <div className="chat-input">
-            <input
-              type="text"
+            {/* Auto-grow compose (WhatsApp-style): expands with the text up to
+                ~5 lines then scrolls internally, snaps back after sending.
+                Enter still sends; Shift+Enter makes a newline. */}
+            <textarea
+              ref={draftRef}
               value={draft}
-              onChange={e => setDraft(e.target.value)}
+              rows={1}
+              onChange={e => {
+                setDraft(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+              }}
               onKeyDown={onKeyDown}
               placeholder="Type a message…"
               maxLength={2000}
+              style={{ resize: 'none', maxHeight: '120px', overflowY: 'auto' }}
             />
             <button onClick={send} disabled={!draft.trim() || sending} aria-label="Send">
               {sending ? (
