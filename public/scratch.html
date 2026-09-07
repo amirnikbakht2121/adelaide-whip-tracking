@@ -106,7 +106,7 @@
   <p class="step" id="step">Your ticket</p>
   <div class="stage" id="stage">
     <div class="card" id="card">
-      <div class="rule"><span>Match 3</span><span>Win <b id="prize">10% off</b></span></div>
+      <div class="rule"><span>Match 3</span></div>
       <div class="gridwrap" id="gridwrap">
         <div class="grid" id="grid"></div>
         <canvas class="foil" id="foil" aria-label="Scratch the panels" role="img"></canvas>
@@ -147,7 +147,7 @@
   document.getElementById('lede').textContent = LEDE0;
 
   var $ = function(id){return document.getElementById(id)};
-  var grid=$('grid'), wrap=$('gridwrap'), foil=$('foil'), result=$('result'), step=$('step'), lede=$('lede'), prize=$('prize');
+  var grid=$('grid'), wrap=$('gridwrap'), foil=$('foil'), result=$('result'), step=$('step'), lede=$('lede');
   var stage=$('stage'), card=$('card'), shade=$('shade'), mark=$('mark');
   var B={revealAll:$('revealAll'),next:$('next'),dbl:$('double'),keep:$('keep'),codeBox:$('codeBox'),codeText:$('codeText'),copy:$('copy'),shop:$('shop'),fine:$('fine')};
   function show(){for(var i=0;i<arguments.length;i++)arguments[i].classList.remove('hidden')}
@@ -402,7 +402,7 @@
   function loadCard(i){
     idx=i; done=false; touched=false; var cardDef=CARDS[i];
     // no "1 of 3": a ticket serial per card, so nothing reads as a fixed sequence
-    step.textContent=(i===2 ? 'Double down' : (FIRST ? FIRST+'’s ticket' : 'Your ticket'))+' · No. '+(1000+Math.floor(Math.random()*9000))+'-AW'; prize.textContent=cardDef.prize;
+    step.textContent=(i===2 ? 'Double down' : (FIRST ? FIRST+'’s ticket' : 'Your ticket'))+' · No. '+(1000+Math.floor(Math.random()*9000))+'-AW';
     result.innerHTML='<div class="sm">Use a finger or your mouse.</div>';
     hide(B.next,B.dbl,B.keep,B.codeBox,B.shop,B.fine,B.revealAll);
     buildGrid(cardDef);
