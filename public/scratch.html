@@ -21,9 +21,13 @@
   .rule b{color:var(--pink)}
   .gridwrap{position:relative;touch-action:none}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .cell{aspect-ratio:1;border-radius:12px;background:var(--sky-soft);display:flex;align-items:center;justify-content:center;font-size:32px;line-height:1;position:relative;transition:box-shadow .25s,background .25s}
+  .cell{aspect-ratio:1;border-radius:12px;background:var(--sky-soft);display:flex;align-items:center;justify-content:center;font-size:32px;padding:4px;line-height:1;position:relative;transition:box-shadow .25s,background .25s}
   .cell .pct{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:22px;letter-spacing:-.01em;color:#fff;background:var(--pink);padding:6px 9px;border-radius:10px}
   .cell .pct.blue{background:var(--blue)}
+  .cell .pct small{display:block;font:700 9px Inter,sans-serif;letter-spacing:.12em;text-align:center;margin-top:1px;opacity:.9}
+  .cell .tile{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .cell .tile em{font-style:normal;font-size:24px;line-height:1}
+  .cell .tile b{font:700 9.5px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);text-align:center;line-height:1.15}
   .cell.win{background:#FFF1F5;box-shadow:0 0 0 3px var(--pink) inset}
   .cell.win .pct{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
   .cell.win.blue{background:var(--sky-soft);box-shadow:0 0 0 3px var(--blue) inset}
@@ -95,13 +99,22 @@
 
   // ── Scripted cards. Symbol POSITIONS are shuffled per visit; the OUTCOME is fixed
   //    (no three-of-a-kind → three 10% → two 20% and a miss). The last screen says so.
-  var FILL = ['🍓','🥤','🎈','⭐','🍦','🧊'];
+  // Prize tiles a real card would show. Only 10% ever completes a triple.
+  var TILES = {
+    '10%':  { big:'10%',  sub:'OFF',           cls:'pct' },
+    '20%':  { big:'20%',  sub:'OFF',           cls:'pct blue' },
+    'DEL':  { ico:'🚚',   lbl:'Free delivery' },
+    '660':  { ico:'🫙',   lbl:'Free 660g' },
+    'FIVE': { ico:'💵',   lbl:'$5 off' },
+    'NOZ':  { ico:'🍓',   lbl:'Free nozzles' },
+    'ICE':  { ico:'🧊',   lbl:'No prize' }
+  };
   var CARDS = [
-    { prize:'10% off', pool:['🍓','🍓','🥤','🥤','🎈','🎈','⭐','🍦','🧊'], win:null,
-      big:'So close…', sm:'Two of a kind twice, but no three. There’s another card.', after:'next' },
-    { prize:'10% off', pool:['10%','10%','10%','🍓','🍓','🎈','⭐','🍦','🧊'], win:'10%',
+    { prize:'10% off', pool:['DEL','DEL','660','660','FIVE','FIVE','20%','10%','ICE'], win:null,
+      big:'So close…', sm:'Three pairs, no triple. There’s another card.', after:'next' },
+    { prize:'10% off', pool:['10%','10%','10%','DEL','DEL','FIVE','660','20%','ICE'], win:'10%',
       big:'10% OFF', pink:true, sm:'Three of a kind. Yours to keep on any order.', after:'double' },
-    { prize:'20% off', pool:['20%','20%','🧊','🍓','🍓','🎈','🥤','⭐','🍦'], win:null,
+    { prize:'20% off', pool:['20%','20%','ICE','DEL','DEL','660','660','FIVE','10%'], win:null,
       big:'No dice.', sm:'Two 20s and an ice cube. Your 10% is still locked in.', after:'end' }
   ];
   var idx=0, cells=[], symbols=[], revealedCells=[], ctx, dpr=1, W=0, H=0, cellRects=[], done=false, scratching=false, moved=0, touched=false;
@@ -112,9 +125,9 @@
     symbols = shuffle(card.pool);
     grid.innerHTML='';
     cells = symbols.map(function(s){
-      var d=document.createElement('div'); d.className='cell';
-      if (/%$/.test(s)) { var p=document.createElement('span'); p.className='pct'+(s==='20%'?' blue':''); p.textContent=s; d.appendChild(p); }
-      else d.textContent=s;
+      var d=document.createElement('div'); d.className='cell'; var t=TILES[s];
+      if (t.cls) { var p=document.createElement('span'); p.className=t.cls; p.innerHTML=t.big+'<small>'+t.sub+'</small>'; d.appendChild(p); }
+      else d.innerHTML='<span class="tile"><em>'+t.ico+'</em><b>'+t.lbl+'</b></span>';
       grid.appendChild(d); return d;
     });
     revealedCells = symbols.map(function(){return false});
