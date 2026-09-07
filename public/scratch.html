@@ -120,7 +120,7 @@
 
   <div class="actions" id="actions">
     <button class="btn ghost small hidden" id="revealAll">Reveal the rest</button>
-    <button class="btn primary hidden" id="next">Scratch another</button>
+    <button class="btn primary hidden" id="next">Try again</button>
     <button class="btn pink hidden" id="double">Double down or nothing</button>
     <button class="btn ghost hidden" id="keep">I'll keep my 10%</button>
     <div class="code hidden" id="codeBox"><b id="codeText">SCRATCH10</b><button id="copy">Copy</button></div>
@@ -131,7 +131,7 @@
 <script>
 (function(){
   var q = new URLSearchParams(location.search);
-  var CODE = (q.get('code') || 'SCRATCH10').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  var CODE = (q.get('code') || 'SCRATCH10').toUpperCase().replace(/[^A-Z0-9-]/g,'');
   var EXP  = q.get('exp') || '';
   // ── personalisation, all optional link params: n=first name · o=order count · s=suburb · since=year
   var NAME = (q.get('n') || '').replace(/[^A-Za-z' -]/g,'').trim(), FIRST = NAME.split(' ')[0];
@@ -172,7 +172,7 @@
   };
   var CARDS = [
     { prize:'10% off', pool:['10%','10%','DEL','DEL','FIVE','FIVE','CYL','CYL','X'], win:null,
-      big:'So close…', sm:'Four pairs, no triple. There’s another card.', after:'next' },
+      big:'So close…', sm:'Have another.', after:'next' },
     { prize:'10% off', pool:['10%','10%','10%','DEL','DEL','FIVE','CYL','CYL','X'], win:'10%',
       big:'10% OFF', pink:true, sm:'Three of a kind. Yours to keep on any order.', after:'double' },
     { prize:'Free cylinder', pool:['CYL','CYL','X','DEL','DEL','FIVE','FIVE','10%','10%'], win:null,
