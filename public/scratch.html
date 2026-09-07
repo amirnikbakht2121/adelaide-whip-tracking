@@ -20,8 +20,8 @@
   .card{position:relative;width:min(340px,100%);border-radius:22px;background:#fff;box-shadow:0 18px 50px rgba(26,143,191,.16),0 1px 0 var(--line);padding:12px;user-select:none;-webkit-user-select:none}
   .rule{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 10px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warm-grey)}
   .rule b{color:var(--pink)}
-  .gridwrap{position:relative;touch-action:none}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .gridwrap{position:relative;touch-action:none;border-radius:16px;overflow:hidden}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px;background:var(--sky-mid);border-radius:16px}
   .cell{aspect-ratio:1;border-radius:12px;background:var(--sky-soft);display:flex;align-items:center;justify-content:center;font-size:32px;padding:4px;line-height:1;position:relative;transition:box-shadow .25s,background .25s}
   .cell .pct{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:22px;letter-spacing:-.01em;color:#fff;background:var(--pink);padding:6px 9px;border-radius:10px}
   .cell .pct.blue{background:var(--blue)}
@@ -119,7 +119,7 @@
     { prize:'20% off', pool:['20%','20%','ICE','DEL','DEL','660','660','FIVE','10%'], win:null,
       big:'No dice.', sm:'Two 20s and an ice cube. Your 10% is still locked in.', after:'end' }
   ];
-  var idx=0, cells=[], symbols=[], revealedCells=[], ctx, dpr=1, W=0, H=0, cellRects=[], done=false, scratching=false, moved=0, touched=false;
+  var idx=0, cells=[], symbols=[], ctx, dpr=1, W=0, H=0, cellRects=[], done=false, scratching=false, moved=0, touched=false;
 
   function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 
@@ -132,7 +132,6 @@
       else d.innerHTML='<span class="tile">'+(t.img?'<img src="'+t.img+'" alt="" draggable="false">':'<em>'+t.ico+'</em>')+'<b>'+t.lbl+'</b></span>';
       grid.appendChild(d); return d;
     });
-    revealedCells = symbols.map(function(){return false});
   }
 
   function layout(){
@@ -146,21 +145,23 @@
   function rrect(x,y,w,h,rad){ctx.beginPath();ctx.moveTo(x+rad,y);ctx.arcTo(x+w,y,x+w,y+h,rad);ctx.arcTo(x+w,y+h,x,y+h,rad);ctx.arcTo(x,y+h,x,y,rad);ctx.arcTo(x,y,x+w,y,rad);ctx.closePath()}
   function paintFoil(){
     ctx.globalCompositeOperation='source-over'; ctx.clearRect(0,0,W,H);
-    cellRects.forEach(function(c,i){
-      if (revealedCells[i]) return;
-      ctx.save(); rrect(c.x,c.y,c.w,c.h,12); ctx.clip();
-      var g=ctx.createLinearGradient(c.x,c.y,c.x+c.w,c.y+c.h);
-      g.addColorStop(0,'#cfd6dc');g.addColorStop(.35,'#eef1f4');g.addColorStop(.55,'#b9c2ca');g.addColorStop(.8,'#e6eaee');g.addColorStop(1,'#c3cbd2');
-      ctx.fillStyle=g; ctx.fillRect(c.x,c.y,c.w,c.h);
-      ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1;
-      for(var y=c.y+5;y<c.y+c.h;y+=8){ctx.beginPath();ctx.moveTo(c.x,y);ctx.lineTo(c.x+c.w,y+2);ctx.stroke()}
-      ctx.fillStyle='rgba(28,28,28,.35)'; ctx.font='700 11px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('?', c.x+c.w/2, c.y+c.h/2);
-      ctx.restore();
-    });
+    ctx.save(); rrect(0,0,W,H,16); ctx.clip();
+    var g=ctx.createLinearGradient(0,0,W,H);
+    g.addColorStop(0,'#cfd6dc');g.addColorStop(.35,'#eef1f4');g.addColorStop(.5,'#b9c2ca');g.addColorStop(.7,'#e6eaee');g.addColorStop(1,'#c3cbd2');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1;
+    for(var y=6;y<H;y+=9){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y+3);ctx.stroke();}
+    ctx.fillStyle='rgba(26,143,191,.22)';
+    [[.14,.2],[.84,.16],[.28,.8],[.74,.76],[.5,.1],[.92,.5],[.08,.55]].forEach(function(pt){star(pt[0]*W,pt[1]*H,7)});
+    ctx.fillStyle='rgba(28,28,28,.55)'; ctx.font='700 13px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('ADELAIDE WHIP', W/2, H/2-10);
+    ctx.font='600 11px Inter, sans-serif'; ctx.fillStyle='rgba(28,28,28,.4)';
+    ctx.fillText('SCRATCH TO REVEAL', W/2, H/2+10);
+    ctx.restore();
     ctx.globalCompositeOperation='destination-out';
     foil.classList.remove('gone');
   }
+  function star(x,y,r){ctx.beginPath();for(var i=0;i<10;i++){var a=Math.PI/5*i-Math.PI/2,rr=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}ctx.closePath();ctx.fill()}
 
   function loadCard(i){
     idx=i; done=false; touched=false; var card=CARDS[i];
@@ -172,24 +173,18 @@
   }
 
   function pos(e){var r=foil.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
-  function erase(p){ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);ctx.fill()}
+  function erase(p){ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.fill()}
 
-  // Per-cell clear ratio; a cell counts as revealed past ~45%, then we wipe it clean.
+  // One sheet: once ~55% of the foil is gone, the rest lifts off and the card is read.
   function check(){
     if(done) return;
-    var img=ctx.getImageData(0,0,foil.width,foil.height).data, rowW=foil.width*4, newly=false;
-    cellRects.forEach(function(c,i){
-      if(revealedCells[i]) return;
-      var x0=Math.round(c.x*dpr), y0=Math.round(c.y*dpr), x1=Math.round((c.x+c.w)*dpr), y1=Math.round((c.y+c.h)*dpr), n=0, clear=0;
-      for(var y=y0+3;y<y1;y+=7){ for(var x=x0+3;x<x1;x+=7){ n++; if(img[y*rowW+x*4+3]===0) clear++; } }
-      if(n && clear/n>0.45){ revealedCells[i]=true; ctx.save(); ctx.globalCompositeOperation='destination-out'; ctx.fillRect(c.x-2,c.y-2,c.w+4,c.h+4); ctx.restore(); newly=true; }
-    });
-    if(newly && revealedCells.every(Boolean)) evaluate();
+    var img=ctx.getImageData(0,0,foil.width,foil.height).data, n=0, clear=0;
+    for(var i=3;i<img.length;i+=4*13){ n++; if(img[i]===0) clear++; }
+    if(clear/n > 0.55) evaluate();
   }
 
   function revealAll(){
     if(done) return;
-    revealedCells = revealedCells.map(function(){return true});
     ctx.save(); ctx.globalCompositeOperation='destination-out'; ctx.fillRect(0,0,W,H); ctx.restore();
     evaluate();
   }
@@ -214,7 +209,7 @@
     show(B.codeBox,B.shop,B.fine); hide(B.dbl,B.keep,B.next,B.revealAll);
   }
 
-  foil.addEventListener('pointerdown',function(e){ if(done) return; scratching=true; foil.setPointerCapture(e.pointerId); erase(pos(e)); if(!touched){touched=true; show(B.revealAll); result.innerHTML='<div class="sm">Keep going — all nine panels.</div>';} });
+  foil.addEventListener('pointerdown',function(e){ if(done) return; scratching=true; foil.setPointerCapture(e.pointerId); erase(pos(e)); if(!touched){touched=true; show(B.revealAll); result.innerHTML='<div class="sm">Keep scratching…</div>';} });
   foil.addEventListener('pointermove',function(e){ if(!scratching) return; erase(pos(e)); if(++moved%5===0) check(); });
   ['pointerup','pointercancel','pointerleave'].forEach(function(ev){ foil.addEventListener(ev,function(){ if(scratching){ scratching=false; check(); } }); });
 
