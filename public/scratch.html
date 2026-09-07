@@ -102,7 +102,7 @@
   <h1 id="title">Your scratchie's here.</h1>
   <p class="lede" id="lede">Scratch the panels. Match three the same to win.</p>
 
-  <p class="step" id="step">Card 1 of 3</p>
+  <p class="step" id="step">Your ticket</p>
   <div class="stage" id="stage">
     <div class="card" id="card">
       <div class="rule"><span>Match 3</span><span>Win <b id="prize">10% off</b></span></div>
@@ -120,7 +120,7 @@
 
   <div class="actions" id="actions">
     <button class="btn ghost small hidden" id="revealAll">Reveal the rest</button>
-    <button class="btn primary hidden" id="next">Next card</button>
+    <button class="btn primary hidden" id="next">Scratch another</button>
     <button class="btn pink hidden" id="double">Double down or nothing</button>
     <button class="btn ghost hidden" id="keep">I'll keep my 10%</button>
     <div class="code hidden" id="codeBox"><b id="codeText">SCRATCH10</b><button id="copy">Copy</button></div>
@@ -133,9 +133,17 @@
   var q = new URLSearchParams(location.search);
   var CODE = (q.get('code') || 'SCRATCH10').toUpperCase().replace(/[^A-Z0-9]/g,'');
   var EXP  = q.get('exp') || '';
-  var NAME = (q.get('n') || '').replace(/[^A-Za-z' -]/g,'').trim();
+  // ── personalisation, all optional link params: n=first name · o=order count · s=suburb · since=year
+  var NAME = (q.get('n') || '').replace(/[^A-Za-z' -]/g,'').trim(), FIRST = NAME.split(' ')[0];
+  var ORDERS = parseInt(q.get('o'),10) || 0;
+  var SUB = (q.get('s') || '').replace(/[^A-Za-z' -]/g,'').trim();
+  var SINCE = (q.get('since') || '').replace(/\D/g,'').slice(0,4);
   var SHOP = 'https://www.adelaidewhip.com/discount/' + encodeURIComponent(CODE) + '?redirect=%2Fcollections%2Fall';
   if (NAME) document.getElementById('title').textContent = NAME + ', your scratchie’s here.';
+  var LEDE0 = 'Scratch the panels. Match three the same to win.';
+  if (ORDERS >= 2) LEDE0 = ORDERS + ' orders in — this one’s a thank-you. Scratch the panels, match three the same to win.';
+  else if (SINCE) LEDE0 = 'With us since ' + SINCE + ' — this one’s a thank-you. Scratch the panels, match three the same to win.';
+  document.getElementById('lede').textContent = LEDE0;
 
   var $ = function(id){return document.getElementById(id)};
   var grid=$('grid'), wrap=$('gridwrap'), foil=$('foil'), result=$('result'), step=$('step'), lede=$('lede'), prize=$('prize');
@@ -392,7 +400,8 @@
 
   function loadCard(i){
     idx=i; done=false; touched=false; var cardDef=CARDS[i];
-    step.textContent='Card '+(i+1)+' of 3'; prize.textContent=cardDef.prize;
+    // no "1 of 3": a ticket serial per card, so nothing reads as a fixed sequence
+    step.textContent=(i===2 ? 'Double down' : (FIRST ? FIRST+'’s ticket' : 'Your ticket'))+' · No. '+(1000+Math.floor(Math.random()*9000))+'-AW'; prize.textContent=cardDef.prize;
     result.innerHTML='<div class="sm">Use a finger or your mouse.</div>';
     hide(B.next,B.dbl,B.keep,B.codeBox,B.shop,B.fine,B.revealAll);
     buildGrid(cardDef);
@@ -427,7 +436,8 @@
     var winner=null; Object.keys(counts).forEach(function(k){ if(counts[k]>=3) winner=k; });
     if(winner){ cells.forEach(function(c,i){ if(symbols[i]===winner) c.classList.add('win'); }); }
     else { grid.classList.add('shake'); setTimeout(function(){grid.classList.remove('shake')},400); }
-    result.innerHTML='<div class="big'+(cardDef.pink?' pink':'')+' pop">'+cardDef.big+'</div><div class="sm">'+cardDef.sm+'</div>';
+    var sm=cardDef.sm; if(FIRST && winner) sm='Three of a kind, '+FIRST+'. Yours to keep on any order.';
+    result.innerHTML='<div class="big'+(cardDef.pink?' pink':'')+' pop">'+cardDef.big+'</div><div class="sm">'+sm+'</div>';
     if(cardDef.after==='next'){ show(B.next); }
     else if(cardDef.after==='double'){ lede.textContent='Feeling lucky? Double down… or bank the 10%.'; show(B.dbl,B.keep); }
     else finish();
@@ -435,7 +445,7 @@
   }
 
   function finish(){
-    step.textContent='Done'; lede.textContent='Your code works on anything in the store.';
+    step.textContent='Done'; lede.textContent=(FIRST ? FIRST+', your code works on anything in the store' : 'Your code works on anything in the store')+(SUB ? ', delivered to '+SUB+'.' : '.');
     B.codeText.textContent=CODE; B.shop.href=SHOP;
     B.fine.textContent='Confession: everyone wins the 10% — we just wanted to see you scratch. One use per customer'+(EXP?', valid until '+EXP:'')+'.';
     show(B.codeBox,B.shop,B.fine); hide(B.dbl,B.keep,B.next,B.revealAll); showButtons();
@@ -486,7 +496,7 @@
   ['pointerup','pointercancel','pointerleave'].forEach(function(ev){ foil.addEventListener(ev,function(){ if(scratching){ scratching=false; release(); scratchQuiet(); check(); } }); });
 
   B.revealAll.addEventListener('click',revealAll);
-  B.next.addEventListener('click',function(){ lede.textContent='Scratch the panels. Match three the same to win.'; loadCard(1); });
+  B.next.addEventListener('click',function(){ lede.textContent=LEDE0; loadCard(1); });
   B.dbl.addEventListener('click',function(){ lede.textContent='Brave. Match three cylinders.'; loadCard(2); });
   B.keep.addEventListener('click',function(){ finish(); });
   B.copy.addEventListener('click',function(){ var ok=function(){B.copy.textContent='Copied ✓';setTimeout(function(){B.copy.textContent='Copy'},1400)}; if(navigator.clipboard){navigator.clipboard.writeText(CODE).then(ok,ok)}else{ok()} });
