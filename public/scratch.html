@@ -7,17 +7,21 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="https://www.adelaidewhip.com/cdn/shop/files/strawberry660white.png">
+<link rel="preload" as="image" href="/wordmark.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
 <style>
   :root{--cream:#FAF6EC;--sky-soft:#E8F4FA;--sky-mid:#D5EAF5;--ink:#1C1C1C;--ink-soft:#4A4744;--warm-grey:#8C857C;--blue:#1A8FBF;--pink:#E07594;--yellow:#FFD166;--cyan:#2BC0FF;--line:rgba(28,28,28,.08)}
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%}
-  body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:radial-gradient(120% 60% at 50% -10%,rgba(43,192,255,.55) 0%,rgba(43,192,255,0) 60%),radial-gradient(90% 40% at 100% 100%,rgba(255,209,102,.45) 0%,rgba(255,209,102,0) 60%),radial-gradient(70% 35% at 0% 95%,rgba(224,117,148,.22) 0%,rgba(224,117,148,0) 60%),linear-gradient(180deg,#9FD9F7 0%,#C9E8F8 40%,#FBF1DA 100%) fixed;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;padding:26px 18px 48px}
+  body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:radial-gradient(120% 60% at 50% -10%,rgba(43,192,255,.55) 0%,rgba(43,192,255,0) 60%),radial-gradient(90% 40% at 100% 100%,rgba(255,209,102,.45) 0%,rgba(255,209,102,0) 60%),radial-gradient(70% 35% at 0% 95%,rgba(224,117,148,.22) 0%,rgba(224,117,148,0) 60%),linear-gradient(180deg,#9FD9F7 0%,#C9E8F8 40%,#FBF1DA 100%) fixed;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;padding:26px 18px 48px;overflow-x:hidden}
   .logo{height:54px;width:auto;margin:4px 0 16px}
   h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:clamp(28px,7vw,36px);line-height:1.08;margin:0 0 8px;text-align:center;letter-spacing:-.01em;text-wrap:balance}
   .lede{margin:0 0 18px;color:var(--ink-soft);font-size:15px;text-align:center;max-width:36ch;min-height:1.4em}
   .step{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);text-align:center;margin:0 0 10px}
-  .card{position:relative;width:min(340px,100%);border-radius:22px;background:#fff;box-shadow:0 18px 50px rgba(26,143,191,.16),0 1px 0 var(--line);padding:12px;user-select:none;-webkit-user-select:none}
+  /* stage = untransformed box the card sits in; card = the 3D tilting object (white border included) */
+  .stage{width:min(340px,100%);perspective:900px}
+  .card{position:relative;width:100%;border-radius:22px;background:#fff;box-shadow:0 18px 50px rgba(26,143,191,.16),0 1px 0 var(--line);padding:12px;user-select:none;-webkit-user-select:none;transform-style:preserve-3d;will-change:transform,box-shadow;transform-origin:50% 50% 0}
+  .shade{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:5}
   .rule{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 10px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warm-grey)}
   .rule b{color:var(--pink)}
   .gridwrap{position:relative;touch-action:none;border-radius:16px;overflow:hidden}
@@ -65,13 +69,16 @@
   <p class="lede" id="lede">Scratch the panels. Match three the same to win.</p>
 
   <p class="step" id="step">Card 1 of 3</p>
-  <div class="card" id="card">
-    <div class="rule"><span>Match 3</span><span>Win <b id="prize">10% off</b></span></div>
-    <div class="gridwrap" id="gridwrap">
-      <div class="grid" id="grid"></div>
-      <canvas class="foil" id="foil" aria-label="Scratch the panels" role="img"></canvas>
+  <div class="stage" id="stage">
+    <div class="card" id="card">
+      <div class="rule"><span>Match 3</span><span>Win <b id="prize">10% off</b></span></div>
+      <div class="gridwrap" id="gridwrap">
+        <div class="grid" id="grid"></div>
+        <canvas class="foil" id="foil" aria-label="Scratch the panels" role="img"></canvas>
+      </div>
+      <div class="result" id="result"><div class="sm">Use a finger or your mouse.</div></div>
+      <div class="shade" id="shade"></div>
     </div>
-    <div class="result" id="result"><div class="sm">Use a finger or your mouse.</div></div>
   </div>
 
   <div class="actions">
@@ -95,9 +102,12 @@
 
   var $ = function(id){return document.getElementById(id)};
   var grid=$('grid'), wrap=$('gridwrap'), foil=$('foil'), result=$('result'), step=$('step'), lede=$('lede'), prize=$('prize');
+  var stage=$('stage'), card=$('card'), shade=$('shade');
   var B={revealAll:$('revealAll'),next:$('next'),dbl:$('double'),keep:$('keep'),codeBox:$('codeBox'),codeText:$('codeText'),copy:$('copy'),shop:$('shop'),fine:$('fine')};
   function show(){for(var i=0;i<arguments.length;i++)arguments[i].classList.remove('hidden')}
   function hide(){for(var i=0;i<arguments.length;i++)arguments[i].classList.add('hidden')}
+  var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var CAN_HOVER = window.matchMedia && matchMedia('(hover: hover)').matches;
 
   // ── Scripted cards. Symbol POSITIONS are shuffled per visit; the OUTCOME is fixed
   //    (no three-of-a-kind → three 10% → two 20% and a miss). The last screen says so.
@@ -119,7 +129,7 @@
     { prize:'20% off', pool:['20%','20%','ICE','DEL','DEL','660','660','FIVE','10%'], win:null,
       big:'No dice.', sm:'Two 20s and an ice cube. Your 10% is still locked in.', after:'end' }
   ];
-  var idx=0, cells=[], symbols=[], ctx, dpr=1, W=0, H=0, cellRects=[], done=false, scratching=false, moved=0, touched=false;
+  var idx=0, cells=[], symbols=[], done=false, scratching=false, moved=0, touched=false;
 
   function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 
@@ -134,71 +144,230 @@
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  FOIL — three layers, all the same pixel size:
+  //    base  : brushed platinum texture, painted once per layout (offscreen)
+  //    mask  : opaque sheet the user scratches holes in (offscreen)
+  //    foil  : what you see — base + live sheen + embossed logo, cut by mask
+  //  The sheen and emboss light direction follow the card tilt, so the foil
+  //  catches light as the phone moves; scratched areas simply aren't there.
+  // ═══════════════════════════════════════════════════════════════════════════
+  var fctx, dpr=1, W=0, H=0, foilLeft=0, foilTop=0;
+  var base=document.createElement('canvas'), bctx;
+  var mask=document.createElement('canvas'), mctx;
+  var wordmark=new Image(), logo=null;   // logo = {w,h,x,y,dark,light,fill,line} tinted silhouettes
+  wordmark.onload=function(){ if(W) buildLogo(); dirty=true; kick(); };
+  wordmark.src='/wordmark.png';
+
+  function seeded(n){var s=n;return function(){s=(s*9301+49297)%233280;return s/233280}}
+  function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+  function clamp(v,a,b){return v<a?a:v>b?b:v}
+
   function layout(){
     dpr = Math.min(window.devicePixelRatio||1, 2);
-    var r = wrap.getBoundingClientRect(); W=r.width; H=r.height;
-    foil.width=Math.round(W*dpr); foil.height=Math.round(H*dpr);
-    ctx = foil.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
-    cellRects = cells.map(function(c){var cr=c.getBoundingClientRect();return {x:cr.left-r.left,y:cr.top-r.top,w:cr.width,h:cr.height}});
+    W = wrap.offsetWidth; H = wrap.offsetHeight;
+    foilLeft = wrap.offsetLeft; foilTop = wrap.offsetTop;   // offsetParent = .card (position:relative)
+    var pw=Math.round(W*dpr), ph=Math.round(H*dpr);
+    foil.width=pw; foil.height=ph; base.width=pw; base.height=ph; mask.width=pw; mask.height=ph;
+    fctx=foil.getContext('2d'); bctx=base.getContext('2d'); mctx=mask.getContext('2d');
+    fctx.setTransform(dpr,0,0,dpr,0,0); bctx.setTransform(dpr,0,0,dpr,0,0); mctx.setTransform(dpr,0,0,dpr,0,0);
+    paintBase();
+    if (wordmark.complete && wordmark.naturalWidth) buildLogo();
   }
 
-  function rrect(x,y,w,h,rad){ctx.beginPath();ctx.moveTo(x+rad,y);ctx.arcTo(x+w,y,x+w,y+h,rad);ctx.arcTo(x+w,y+h,x,y+h,rad);ctx.arcTo(x,y+h,x,y,rad);ctx.arcTo(x,y,x+w,y,rad);ctx.closePath()}
-  function paintFoil(){
-    ctx.globalCompositeOperation='source-over'; ctx.clearRect(0,0,W,H);
-    ctx.save(); rrect(0,0,W,H,16); ctx.clip();
-    var g=ctx.createLinearGradient(0,0,W,H);
-    g.addColorStop(0,'#cfd6dc');g.addColorStop(.35,'#eef1f4');g.addColorStop(.5,'#b9c2ca');g.addColorStop(.7,'#e6eaee');g.addColorStop(1,'#c3cbd2');
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1;
-    for(var y=6;y<H;y+=9){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y+3);ctx.stroke();}
-    ctx.fillStyle='rgba(26,143,191,.22)';
-    [[.14,.2],[.84,.16],[.28,.8],[.74,.76],[.5,.1],[.92,.5],[.08,.55]].forEach(function(pt){star(pt[0]*W,pt[1]*H,7)});
-    ctx.fillStyle='rgba(28,28,28,.55)'; ctx.font='700 13px Inter, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('ADELAIDE WHIP', W/2, H/2-10);
-    ctx.font='600 11px Inter, sans-serif'; ctx.fillStyle='rgba(28,28,28,.4)';
-    ctx.fillText('SCRATCH TO REVEAL', W/2, H/2+10);
-    ctx.restore();
-    ctx.globalCompositeOperation='destination-out';
-    foil.classList.remove('gone');
+  // S1 — brushed platinum (static part: gradient, brushing, vignette, hairline borders)
+  function paintBase(){
+    var c=bctx; c.globalCompositeOperation='source-over'; c.clearRect(0,0,W,H);
+    c.save(); rr(c,0,0,W,H,16); c.clip();
+    var g=c.createLinearGradient(0,0,W,H*.6);
+    g.addColorStop(0,'#d9dee3');g.addColorStop(.42,'#f0f2f4');g.addColorStop(.5,'#f6f7f9');g.addColorStop(.58,'#e6eaee');g.addColorStop(1,'#c9d0d6');
+    c.fillStyle=g;c.fillRect(0,0,W,H);
+    var rnd=seeded(7);c.lineWidth=1;
+    for(var y=0;y<H;y+=2){c.strokeStyle='rgba(255,255,255,'+(0.12+rnd()*0.25)+')';c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke();
+      if(rnd()<0.5){c.strokeStyle='rgba(60,70,80,'+(0.03+rnd()*0.08)+')';c.beginPath();c.moveTo(0,y+1);c.lineTo(W,y+1);c.stroke();}}
+    var v=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(20,30,40,.16)');c.fillStyle=v;c.fillRect(0,0,W,H);
+    c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=1;rr(c,8.5,8.5,W-17,H-17,11);c.stroke();
+    c.strokeStyle='rgba(40,50,60,.12)';rr(c,7.5,7.5,W-15,H-15,12);c.stroke();
+    c.restore();
   }
-  function star(x,y,r){ctx.beginPath();for(var i=0;i<10;i++){var a=Math.PI/5*i-Math.PI/2,rr=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}ctx.closePath();ctx.fill()}
+
+  function resetMask(){
+    mctx.globalCompositeOperation='source-over'; mctx.clearRect(0,0,W,H);
+    mctx.fillStyle='#000'; mctx.fillRect(0,0,W,H);
+    mctx.globalCompositeOperation='destination-out';
+  }
+
+  // Split the wordmark into its two blues (outline vs fill) and pre-tint four silhouettes.
+  function buildLogo(){
+    var lw=Math.round(W*.6), lh=Math.round(lw*wordmark.naturalHeight/wordmark.naturalWidth);
+    var pw=lw*dpr, ph=lh*dpr;
+    var src=document.createElement('canvas'); src.width=pw; src.height=ph;
+    var sc=src.getContext('2d'); sc.drawImage(wordmark,0,0,pw,ph);
+    var id=sc.getImageData(0,0,pw,ph), d=id.data, n=d.length;
+    function tinted(pick,rgb,am){
+      var out=sc.createImageData(pw,ph), o=out.data;
+      for(var i=0;i<n;i+=4){ var a=d[i+3]; if(!a) continue; var line=d[i]<40&&d[i+1]<165; if(pick==='line'?!line:pick==='fill'?line:false) continue;
+        o[i]=rgb[0];o[i+1]=rgb[1];o[i+2]=rgb[2];o[i+3]=Math.round(a*am); }
+      var cv=document.createElement('canvas'); cv.width=pw; cv.height=ph; cv.getContext('2d').putImageData(out,0,0); return cv;
+    }
+    logo={ w:lw, h:lh, x:Math.round((W-lw)/2), y:Math.round(H/2-lh/2-9),
+      dark:tinted('all',[30,40,52],.62), light:tinted('all',[255,255,255],.95),
+      fill:tinted('fill',[70,84,98],.14), line:tinted('line',[40,52,66],.30) };
+  }
+
+  // lx,ly = where the light hits the foil (0..1). Everything moving lives here.
+  function renderFoil(lx,ly){
+    if(!fctx) return;
+    var c=fctx; c.globalCompositeOperation='source-over'; c.clearRect(0,0,W,H);
+    c.drawImage(base,0,0,W,H);
+    c.save(); rr(c,0,0,W,H,16); c.clip();
+    // anisotropic band: runs on the diagonal, slides with the light
+    var t=clamp((lx*W+ly*H)/(W+H),0,1);
+    var band=c.createLinearGradient(0,0,W,H);
+    function stop(o,a){band.addColorStop(clamp(t+o,0,1),'rgba(255,255,255,'+a+')')}
+    stop(-.20,0);stop(-.06,.42);stop(0,.78);stop(.06,.42);stop(.20,0);
+    c.fillStyle=band;c.fillRect(0,0,W,H);
+    // soft point glow where the light sits
+    var glow=c.createRadialGradient(lx*W,ly*H,0,lx*W,ly*H,W*.6);
+    glow.addColorStop(0,'rgba(255,255,255,.34)');glow.addColorStop(1,'rgba(255,255,255,0)');
+    c.fillStyle=glow;c.fillRect(0,0,W,H);
+    // light direction for the emboss (from the logo toward the light; top-left when centred)
+    var Lx=(lx-.5)*2.8-.7, Ly=(ly-.5)*2.8-.7, Ln=Math.hypot(Lx,Ly)||1; Lx/=Ln; Ly/=Ln;
+    var d=1.6;
+    if(logo){
+      c.drawImage(logo.dark, logo.x+Lx*d, logo.y+Ly*d, logo.w, logo.h);   // shadowed rim faces the light (pressed in)
+      c.drawImage(logo.light,logo.x-Lx*d, logo.y-Ly*d, logo.w, logo.h);   // lit rim on the far side
+      c.drawImage(logo.fill, logo.x, logo.y, logo.w, logo.h);
+      c.drawImage(logo.line, logo.x, logo.y, logo.w, logo.h);
+      embossText(c,'SCRATCH TO REVEAL',W/2,logo.y+logo.h+16,'600 10px Inter, sans-serif',Lx,Ly);
+    } else {
+      embossText(c,'ADELAIDE WHIP',W/2,H/2-8,'700 15px Inter, sans-serif',Lx,Ly);
+      embossText(c,'SCRATCH TO REVEAL',W/2,H/2+13,'600 10px Inter, sans-serif',Lx,Ly);
+    }
+    c.restore();
+    // cut out what's been scratched
+    c.globalCompositeOperation='destination-in'; c.drawImage(mask,0,0,W,H);
+    c.globalCompositeOperation='source-over';
+  }
+  function embossText(c,text,x,y,font,Lx,Ly){c.font=font;c.textAlign='center';c.textBaseline='middle';c.fillStyle='rgba(255,255,255,.9)';c.fillText(text,x-Lx,y-Ly);c.fillStyle='rgba(35,42,50,.5)';c.fillText(text,x,y)}
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  TILT — the whole card (white border and all) leans in 3D.
+  //    gyro  : phone orientation, relative to how it was first held
+  //    hover : desktop pointer over the card (light press)
+  //    press : while scratching, the card sinks under the finger
+  //  Everything is summed, smoothed, and drives: card transform, moving shadow,
+  //  a light/shade wash over the white card, and the foil sheen position.
+  // ═══════════════════════════════════════════════════════════════════════════
+  var P=900, MAXG=14, MAXH=7, MAXP=11, LIM=18;
+  var tilt={a:0,b:0,s:1}, gyro={a:0,b:0}, hover={a:0,b:0}, press={a:0,b:0,s:1};
+  var running=false, dirty=false, lastLx=-1, lastLy=-1;
+  function kick(){ if(!running){ running=true; requestAnimationFrame(frame); } }
+  function frame(){
+    var ta=clamp(gyro.a+hover.a+press.a,-LIM,LIM), tb=clamp(gyro.b+hover.b+press.b,-LIM,LIM), ts=press.s;
+    if(REDUCED){ ta=0; tb=0; ts=1; }
+    tilt.a+=(ta-tilt.a)*.16; tilt.b+=(tb-tilt.b)*.16; tilt.s+=(ts-tilt.s)*.22;
+    var settled=Math.abs(ta-tilt.a)<.02&&Math.abs(tb-tilt.b)<.02&&Math.abs(ts-tilt.s)<.001;
+    if(settled){ tilt.a=ta; tilt.b=tb; tilt.s=ts; }
+    // the highlight moves toward whichever side leans in toward you
+    var lx=clamp(.5-(tilt.b/MAXG)*.42,.04,.96), ly=clamp(.5+(tilt.a/MAXG)*.42,.04,.96);
+    applyCard(lx,ly);
+    if(!done && (dirty || Math.abs(lx-lastLx)>.0015 || Math.abs(ly-lastLy)>.0015)){ renderFoil(lx,ly); lastLx=lx; lastLy=ly; }
+    dirty=false;
+    if(settled) running=false; else requestAnimationFrame(frame);
+  }
+  function applyCard(lx,ly){
+    card.style.transform='rotateX('+tilt.a.toFixed(3)+'deg) rotateY('+tilt.b.toFixed(3)+'deg) scale('+tilt.s.toFixed(4)+')';
+    var sx=(-tilt.b*1.2).toFixed(1), sy=(18-tilt.a*1.1).toFixed(1);
+    card.style.boxShadow=sx+'px '+sy+'px 50px rgba(26,143,191,.18), 0 1px 0 rgba(28,28,28,.08)';
+    var Lx=(lx-.5)*2.8-.7, Ly=(ly-.5)*2.8-.7, ang=Math.atan2(-Lx,Ly)*180/Math.PI;
+    shade.style.background='linear-gradient('+ang.toFixed(1)+'deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 46%, rgba(10,35,70,.075) 100%)';
+  }
+
+  // Screen point → point on the tilted card plane (exact inverse of perspective·rotateX·rotateY·scale).
+  // Returns card-centred coords in CSS px plus normalised (-1..1) position for the press.
+  function unproject(cx,cy){
+    var r=stage.getBoundingClientRect();
+    var sx=cx-(r.left+r.width/2), sy=cy-(r.top+r.height/2);
+    var a=tilt.a*Math.PI/180, b=tilt.b*Math.PI/180, s=tilt.s||1;
+    var ca=Math.cos(a), sa=Math.sin(a), cb=Math.cos(b), sb=Math.sin(b);
+    var nx=sb, ny=-cb*sa, nz=cb*ca;                    // plane normal after Rx(a)·Ry(b)
+    var den=P*nz-nx*sx-ny*sy; if(Math.abs(den)<1e-6) den=1e-6;
+    var t=P*nz/den, qx=t*sx, qy=t*sy, qz=P*(1-t);      // ray from eye (0,0,P) hits the plane
+    var y1=qy*ca+qz*sa, z1=-qy*sa+qz*ca, x1=qx;        // Rx(-a)
+    var x2=x1*cb-z1*sb;                                // Ry(-b)
+    return { x:x2/s, y:y1/s, nx:clamp(x2/s/(r.width/2),-1,1), ny:clamp(y1/s/(r.height/2),-1,1), hw:r.width/2, hh:r.height/2 };
+  }
+  function foilPos(e){ var u=unproject(e.clientX,e.clientY); return { x:u.x+u.hw-foilLeft, y:u.y+u.hh-foilTop, u:u }; }
+
+  // gyro
+  var base0=null;
+  function onOri(e){
+    if(e.beta==null||e.gamma==null) return;
+    if(!base0){ base0={b:e.beta,g:e.gamma}; return; }
+    var db=e.beta-base0.b, dg=e.gamma-base0.g;
+    var ang=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0);
+    var fx, fy;                                   // fx = forward/back lean, fy = left/right lean
+    if(ang===90){ fx=dg; fy=-db; } else if(ang===-90||ang===270){ fx=-dg; fy=db; } else { fx=db; fy=dg; }
+    gyro.a=clamp(-fx,-30,30)/30*MAXG;             // top of the phone away from you → top of the card away
+    gyro.b=clamp(fy,-30,30)/30*MAXG;              // right edge down → right edge away
+    kick();
+  }
+  function enableGyro(){
+    if(REDUCED||!('DeviceOrientationEvent' in window)) return;
+    if(typeof DeviceOrientationEvent.requestPermission==='function'){
+      DeviceOrientationEvent.requestPermission().then(function(s){ if(s==='granted') window.addEventListener('deviceorientation',onOri); }).catch(function(){});
+    } else window.addEventListener('deviceorientation',onOri);
+  }
+  if('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission==='function'){
+    // iOS: needs a tap first. The first tap anywhere (the first scratch counts) asks once.
+    var asked=false, ask=function(){ if(asked) return; asked=true; enableGyro(); };
+    document.addEventListener('touchend',ask,{capture:true,passive:true}); document.addEventListener('click',ask,true);
+  } else enableGyro();
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') base0=null; });
+
+  // hover (desktop only — a light press that follows the pointer)
+  if(CAN_HOVER && !REDUCED){
+    stage.addEventListener('pointermove',function(e){ if(scratching||e.pointerType!=='mouse') return; var u=unproject(e.clientX,e.clientY); hover.b=u.nx*MAXH; hover.a=-u.ny*MAXH; kick(); });
+    stage.addEventListener('pointerleave',function(){ hover.a=0; hover.b=0; kick(); });
+  }
 
   function loadCard(i){
-    idx=i; done=false; touched=false; var card=CARDS[i];
-    step.textContent='Card '+(i+1)+' of 3'; prize.textContent=card.prize;
+    idx=i; done=false; touched=false; var cardDef=CARDS[i];
+    step.textContent='Card '+(i+1)+' of 3'; prize.textContent=cardDef.prize;
     result.innerHTML='<div class="sm">Use a finger or your mouse.</div>';
     hide(B.next,B.dbl,B.keep,B.codeBox,B.shop,B.fine,B.revealAll);
-    buildGrid(card);
-    requestAnimationFrame(function(){ layout(); paintFoil(); });
+    buildGrid(cardDef);
+    requestAnimationFrame(function(){ layout(); resetMask(); foil.classList.remove('gone'); lastLx=-1; dirty=true; kick(); });
   }
 
-  function pos(e){var r=foil.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
-  function erase(p){ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.fill()}
+  function erase(p){ mctx.beginPath(); mctx.arc(p.x,p.y,24,0,Math.PI*2); mctx.fill(); dirty=true; }
 
   // One sheet: once ~55% of the foil is gone, the rest lifts off and the card is read.
   function check(){
     if(done) return;
-    var img=ctx.getImageData(0,0,foil.width,foil.height).data, n=0, clear=0;
+    var img=mctx.getImageData(0,0,mask.width,mask.height).data, n=0, clear=0;
     for(var i=3;i<img.length;i+=4*13){ n++; if(img[i]===0) clear++; }
     if(clear/n > 0.55) evaluate();
   }
 
   function revealAll(){
     if(done) return;
-    ctx.save(); ctx.globalCompositeOperation='destination-out'; ctx.fillRect(0,0,W,H); ctx.restore();
+    mctx.clearRect(0,0,W,H); dirty=true;
     evaluate();
   }
 
   function evaluate(){
-    done=true; foil.classList.add('gone'); hide(B.revealAll);
-    var card=CARDS[idx], counts={};
+    done=true; press.a=0; press.b=0; press.s=1; scratching=false;
+    renderFoil(lastLx<0?.5:lastLx, lastLy<0?.5:lastLy); foil.classList.add('gone'); hide(B.revealAll); kick();
+    var cardDef=CARDS[idx], counts={};
     symbols.forEach(function(s){counts[s]=(counts[s]||0)+1});
     var winner=null; Object.keys(counts).forEach(function(k){ if(counts[k]>=3) winner=k; });
     if(winner){ cells.forEach(function(c,i){ if(symbols[i]===winner){ c.classList.add('win'); if(winner==='20%') c.classList.add('blue'); } }); }
     else { grid.classList.add('shake'); setTimeout(function(){grid.classList.remove('shake')},400); }
-    result.innerHTML='<div class="big'+(card.pink?' pink':'')+' pop">'+card.big+'</div><div class="sm">'+card.sm+'</div>';
-    if(card.after==='next'){ show(B.next); }
-    else if(card.after==='double'){ lede.textContent='Feeling lucky? Go again for 20%… or bank the 10%.'; show(B.dbl,B.keep); }
+    result.innerHTML='<div class="big'+(cardDef.pink?' pink':'')+' pop">'+cardDef.big+'</div><div class="sm">'+cardDef.sm+'</div>';
+    if(cardDef.after==='next'){ show(B.next); }
+    else if(cardDef.after==='double'){ lede.textContent='Feeling lucky? Go again for 20%… or bank the 10%.'; show(B.dbl,B.keep); }
     else finish();
   }
 
@@ -209,20 +378,24 @@
     show(B.codeBox,B.shop,B.fine); hide(B.dbl,B.keep,B.next,B.revealAll);
   }
 
-  foil.addEventListener('pointerdown',function(e){ if(done) return; scratching=true; foil.setPointerCapture(e.pointerId); erase(pos(e)); if(!touched){touched=true; show(B.revealAll); result.innerHTML='<div class="sm">Keep scratching…</div>';} });
-  foil.addEventListener('pointermove',function(e){ if(!scratching) return; erase(pos(e)); if(++moved%5===0) check(); });
-  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){ foil.addEventListener(ev,function(){ if(scratching){ scratching=false; check(); } }); });
+  // scratching — the card sinks toward the finger while you scratch, springs back when you lift
+  function pressAt(u){ if(REDUCED) return; press.b=u.nx*MAXP; press.a=-u.ny*MAXP; press.s=.985; hover.a=0; hover.b=0; }
+  function release(){ press.a=0; press.b=0; press.s=1; kick(); }
+  foil.addEventListener('pointerdown',function(e){ if(done) return; scratching=true; try{foil.setPointerCapture(e.pointerId)}catch(_){} var p=foilPos(e); pressAt(p.u); erase(p); kick(); if(!touched){touched=true; show(B.revealAll); result.innerHTML='<div class="sm">Keep scratching…</div>';} });
+  foil.addEventListener('pointermove',function(e){ if(!scratching) return; var p=foilPos(e); pressAt(p.u); erase(p); kick(); if(++moved%5===0) check(); });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){ foil.addEventListener(ev,function(){ if(scratching){ scratching=false; release(); check(); } }); });
 
   B.revealAll.addEventListener('click',revealAll);
   B.next.addEventListener('click',function(){ lede.textContent='Scratch the panels. Match three the same to win.'; loadCard(1); });
   B.dbl.addEventListener('click',function(){ lede.textContent='Brave. Match three 20s.'; loadCard(2); });
   B.keep.addEventListener('click',function(){ finish(); });
   B.copy.addEventListener('click',function(){ var ok=function(){B.copy.textContent='Copied ✓';setTimeout(function(){B.copy.textContent='Copy'},1400)}; if(navigator.clipboard){navigator.clipboard.writeText(CODE).then(ok,ok)}else{ok()} });
-  window.addEventListener('resize',function(){ if(!done){ layout(); paintFoil(); } });
+  var lastW=0;
+  window.addEventListener('resize',function(){ var w=wrap.offsetWidth; if(w===lastW) return; lastW=w; if(!done){ layout(); resetMask(); lastLx=-1; dirty=true; kick(); } });
 
-  // test hook (harmless): window.__scratch.revealAll()
-  window.__scratch = { revealAll: revealAll };
-  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){ loadCard(0); });
+  // test hooks (harmless): window.__scratch.revealAll(), .tilt(a,b), .scratchAt(x,y)
+  window.__scratch = { revealAll: revealAll, tilt:function(a,b){ gyro.a=a; gyro.b=b; kick(); }, scratchAt:function(x,y){ erase({x:x,y:y}); kick(); } };
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){ lastW=wrap.offsetWidth; loadCard(0); });
 })();
 </script>
 </body>
