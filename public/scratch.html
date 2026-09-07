@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Your scratchie · Adelaide Whip</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root{--cream:#FAF6EC;--sky-soft:#E8F4FA;--sky-mid:#D5EAF5;--ink:#1C1C1C;--ink-soft:#4A4744;--warm-grey:#8C857C;--blue:#1A8FBF;--pink:#E07594;--yellow:#FFD166;--cyan:#2BC0FF;--line:rgba(28,28,28,.08)}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:linear-gradient(180deg,var(--sky-soft) 0%,var(--sky-mid) 35%,var(--cream) 100%) fixed;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;padding:28px 18px 48px}
+  .logo{height:54px;width:auto;margin:6px 0 18px}
+  h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:clamp(28px,7vw,36px);line-height:1.08;margin:0 0 8px;text-align:center;letter-spacing:-.01em;text-wrap:balance}
+  .lede{margin:0 0 22px;color:var(--ink-soft);font-size:15px;text-align:center;max-width:34ch}
+  .stage{position:relative;width:min(340px,100%);}
+  .card{position:relative;width:100%;aspect-ratio:17/11;border-radius:20px;background:#fff;box-shadow:0 18px 50px rgba(26,143,191,.16),0 1px 0 var(--line);overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+  .face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px;text-align:center}
+  .face .big{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:38px;line-height:1;letter-spacing:-.01em}
+  .face .big.pink{color:var(--pink);font-size:52px}
+  .face .sm{color:var(--ink-soft);font-size:14px;max-width:26ch}
+  .face .ico{font-size:34px;line-height:1;margin-bottom:2px}
+  canvas.foil{position:absolute;inset:0;width:100%;height:100%;cursor:grab;transition:opacity .45s ease}
+  canvas.foil.gone{opacity:0;pointer-events:none}
+  .hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(28,28,28,.55);pointer-events:none;transition:opacity .3s}
+  .hint.gone{opacity:0}
+  .actions{display:flex;flex-direction:column;gap:10px;margin-top:18px;width:min(340px,100%)}
+  .btn{appearance:none;border:0;border-radius:14px;height:50px;font:600 15px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;transition:transform .08s ease,background .2s}
+  .btn:active{transform:scale(.985)}
+  .btn.primary{background:var(--blue);color:#fff}
+  .btn.primary:hover{background:#177fa9}
+  .btn.ghost{background:#fff;color:var(--ink);box-shadow:0 1px 0 var(--line),0 6px 18px rgba(28,28,28,.06)}
+  .btn.pink{background:var(--pink);color:#fff}
+  .btn:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+  .hidden{display:none!important}
+  .code{margin-top:6px;background:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 0 var(--line),0 6px 18px rgba(28,28,28,.06)}
+  .code b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:22px;letter-spacing:.14em}
+  .code button{appearance:none;border:0;background:var(--sky-soft);color:var(--blue);font:600 13px Inter,sans-serif;border-radius:10px;padding:9px 12px;cursor:pointer}
+  .fine{margin:16px 0 0;font-size:12px;color:var(--warm-grey);text-align:center;max-width:40ch;line-height:1.45}
+  .step{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);text-align:center;margin:0 0 10px}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+  .pop{animation:pop .45s cubic-bezier(.22,1,.36,1) both}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .nudge{animation:bounce 1.4s ease-in-out infinite}
+  @media (prefers-reduced-motion:reduce){.pop,.nudge{animation:none}canvas.foil{transition:none}}
+</style>
+</head>
+<body>
+  <img class="logo" src="/logo.png" alt="Adelaide Whip">
+  <h1 id="title">Your scratchie's here.</h1>
+  <p class="lede" id="lede">Three scratches, ten seconds. Use a finger or your mouse.</p>
+
+  <p class="step" id="step">Card 1 of 3</p>
+  <div class="stage">
+    <div class="card" id="card">
+      <div class="face" id="face"></div>
+      <canvas class="foil" id="foil" aria-label="Scratch here" role="img"></canvas>
+      <div class="hint" id="hint">Scratch here</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn ghost hidden" id="reveal">Reveal it for me</button>
+    <button class="btn primary hidden" id="next">Next card</button>
+    <button class="btn pink hidden" id="double">Double down for 20%</button>
+    <button class="btn ghost hidden" id="keep">I'll keep my 10%</button>
+    <div class="code hidden" id="codeBox"><b id="codeText">SCRATCH10</b><button id="copy">Copy</button></div>
+    <a class="btn primary hidden" id="shop" href="#">Shop with 10% off</a>
+  </div>
+  <p class="fine hidden" id="fine"></p>
+
+<script>
+(function(){
+  var q = new URLSearchParams(location.search);
+  var CODE = (q.get('code') || 'SCRATCH10').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  var EXP  = q.get('exp') || '';
+  var NAME = (q.get('n') || '').replace(/[^A-Za-z' -]/g,'').trim();
+  var SHOP = 'https://www.adelaidewhip.com/discount/' + encodeURIComponent(CODE) + '?redirect=%2Fcollections%2Fall';
+  if (NAME) document.getElementById('title').textContent = NAME + ', your scratchie’s here.';
+
+  var card=document.getElementById('card'), face=document.getElementById('face'), foil=document.getElementById('foil'),
+      hint=document.getElementById('hint'), step=document.getElementById('step'), lede=document.getElementById('lede');
+  var B={reveal:g('reveal'),next:g('next'),dbl:g('double'),keep:g('keep'),codeBox:g('codeBox'),codeText:g('codeText'),copy:g('copy'),shop:g('shop'),fine:g('fine')};
+  function g(id){return document.getElementById(id)}
+  function show(){for(var i=0;i<arguments.length;i++)arguments[i].classList.remove('hidden')}
+  function hide(){for(var i=0;i<arguments.length;i++)arguments[i].classList.add('hidden')}
+
+  // Scripted beats — same story for everyone, and the last screen says so.
+  var CARDS = [
+    { ico:'😬', big:'Nothing here…', sm:'Don’t worry — there’s another card.', after:'next' },
+    { ico:'🎉', big:'10% OFF', pink:true, sm:'Yours to keep on any order.', after:'double' },
+    { ico:'🧊', big:'No dice.', sm:'But we’re not taking your 10% back. It’s locked in.', after:'end' }
+  ];
+  var idx = 0, ctx, W, H, scratching=false, revealed=false, samples=0;
+
+  function paintFoil(){
+    var dpr = Math.min(window.devicePixelRatio||1, 2);
+    var r = card.getBoundingClientRect(); W=r.width; H=r.height;
+    foil.width = Math.round(W*dpr); foil.height = Math.round(H*dpr);
+    ctx = foil.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.globalCompositeOperation='source-over';
+    var gr = ctx.createLinearGradient(0,0,W,H);
+    gr.addColorStop(0,'#cfd6dc'); gr.addColorStop(.35,'#eef1f4'); gr.addColorStop(.5,'#b9c2ca'); gr.addColorStop(.7,'#e6eaee'); gr.addColorStop(1,'#c3cbd2');
+    ctx.fillStyle=gr; ctx.fillRect(0,0,W,H);
+    // fine brushed lines
+    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1;
+    for(var y=6;y<H;y+=9){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y+3);ctx.stroke();}
+    // stars
+    ctx.fillStyle='rgba(26,143,191,.22)';
+    [[.14,.28],[.82,.22],[.3,.74],[.72,.7],[.5,.18],[.9,.6]].forEach(function(p){star(p[0]*W,p[1]*H,7)});
+    ctx.fillStyle='rgba(28,28,28,.55)'; ctx.font='700 13px Inter, sans-serif'; ctx.textAlign='center'; ctx.letterSpacing='0.12em';
+    ctx.fillText('ADELAIDE WHIP', W/2, H*0.42);
+    ctx.font='600 11px Inter, sans-serif'; ctx.fillStyle='rgba(28,28,28,.4)';
+    ctx.fillText('SCRATCH TO REVEAL', W/2, H*0.42+20);
+    ctx.globalCompositeOperation='destination-out';
+    foil.classList.remove('gone'); hint.classList.remove('gone'); revealed=false; samples=0;
+  }
+  function star(x,y,r){ctx.beginPath();for(var i=0;i<10;i++){var a=Math.PI/5*i-Math.PI/2,rr=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}ctx.closePath();ctx.fill()}
+
+  function setFace(c){
+    face.innerHTML = '<div class="ico">'+c.ico+'</div><div class="big'+(c.pink?' pink':'')+'">'+c.big+'</div><div class="sm">'+c.sm+'</div>';
+  }
+  function loadCard(i){
+    idx=i; var c=CARDS[i]; setFace(c);
+    step.textContent = 'Card '+(i+1)+' of 3';
+    hide(B.next,B.dbl,B.keep,B.codeBox,B.shop,B.fine); show(B.reveal);
+    paintFoil();
+  }
+
+  function pos(e){var r=foil.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return {x:t.clientX-r.left,y:t.clientY-r.top}}
+  function erase(p){ctx.beginPath();ctx.arc(p.x,p.y,22,0,Math.PI*2);ctx.fill()}
+  function check(){
+    if(revealed) return;
+    var d=ctx.getImageData(0,0,foil.width,foil.height).data, clear=0, n=0;
+    for(var i=3;i<d.length;i+=4*11){n++; if(d[i]===0) clear++;}
+    if(clear/n > 0.55) reveal();
+  }
+  function reveal(){
+    if(revealed) return; revealed=true;
+    foil.classList.add('gone'); hint.classList.add('gone'); hide(B.reveal);
+    face.firstChild && face.firstChild.classList.add('pop');
+    var c=CARDS[idx];
+    if(c.after==='next'){ show(B.next); }
+    else if(c.after==='double'){
+      lede.textContent='Feeling lucky? You can go again for 20%… or bank the 10%.';
+      show(B.dbl,B.keep);
+    }
+    else { finish(); }
+  }
+  function finish(){
+    step.textContent='Done';
+    lede.textContent='Your code works on anything in the store.';
+    B.codeText.textContent=CODE; B.shop.href=SHOP;
+    B.fine.textContent='Confession: everyone wins the 10% — we just wanted to see you scratch. One use per customer' + (EXP ? ', valid until '+EXP : '') + '.';
+    show(B.codeBox,B.shop,B.fine); hide(B.dbl,B.keep,B.next,B.reveal);
+  }
+
+  var moved=0;
+  foil.addEventListener('pointerdown',function(e){scratching=true;foil.setPointerCapture(e.pointerId);erase(pos(e));hint.classList.add('gone')});
+  foil.addEventListener('pointermove',function(e){if(!scratching)return;erase(pos(e));if(++moved%6===0)check()});
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){foil.addEventListener(ev,function(){if(scratching){scratching=false;check()}})});
+
+  B.reveal.addEventListener('click',reveal);
+  B.next.addEventListener('click',function(){loadCard(1)});
+  B.dbl.addEventListener('click',function(){lede.textContent='Brave. Scratch it.';loadCard(2)});
+  B.keep.addEventListener('click',function(){step.textContent='Card 2 of 3';finish()});
+  B.copy.addEventListener('click',function(){
+    var done=function(){B.copy.textContent='Copied ✓';setTimeout(function(){B.copy.textContent='Copy'},1400)};
+    if(navigator.clipboard){navigator.clipboard.writeText(CODE).then(done,done)}else{done()}
+  });
+  window.addEventListener('resize',function(){if(!revealed)paintFoil()});
+
+  document.fonts && document.fonts.ready ? document.fonts.ready.then(function(){loadCard(0)}) : loadCard(0);
+})();
+</script>
+</body>
+</html>
