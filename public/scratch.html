@@ -106,7 +106,7 @@
   <div class="actions">
     <button class="btn ghost small hidden" id="revealAll">Reveal the rest</button>
     <button class="btn primary hidden" id="next">Next card</button>
-    <button class="btn pink hidden" id="double">Double down for a free cylinder</button>
+    <button class="btn pink hidden" id="double">Double down or nothing</button>
     <button class="btn ghost hidden" id="keep">I'll keep my 10%</button>
     <div class="code hidden" id="codeBox"><b id="codeText">SCRATCH10</b><button id="copy">Copy</button></div>
     <a class="btn primary hidden" id="shop" href="#">Shop with 10% off</a>
@@ -380,7 +380,7 @@
     requestAnimationFrame(function(){ layout(); resetMask(); foil.classList.remove('gone'); lastLx=-1; dirty=true; kick(); });
   }
 
-  function erase(p){ mctx.beginPath(); mctx.arc(p.x,p.y,24,0,Math.PI*2); mctx.fill(); dirty=true; }
+  function erase(p){ mctx.beginPath(); mctx.arc(p.x,p.y,18,0,Math.PI*2); mctx.fill(); dirty=true; }
 
   // One sheet: once ~55% of the foil is gone, the rest lifts off and the card is read.
   function check(){
@@ -392,7 +392,7 @@
 
   function revealAll(){
     if(done) return;
-    mctx.clearRect(0,0,W,H); dirty=true;
+    scratchQuiet(); mctx.clearRect(0,0,W,H); dirty=true;
     evaluate();
   }
 
@@ -406,7 +406,7 @@
     else { grid.classList.add('shake'); setTimeout(function(){grid.classList.remove('shake')},400); }
     result.innerHTML='<div class="big'+(cardDef.pink?' pink':'')+' pop">'+cardDef.big+'</div><div class="sm">'+cardDef.sm+'</div>';
     if(cardDef.after==='next'){ show(B.next); }
-    else if(cardDef.after==='double'){ lede.textContent='Feeling lucky? Go again for a free cylinder… or bank the 10%.'; show(B.dbl,B.keep); }
+    else if(cardDef.after==='double'){ lede.textContent='Feeling lucky? Double down… or bank the 10%.'; show(B.dbl,B.keep); }
     else finish();
   }
 
@@ -417,12 +417,49 @@
     show(B.codeBox,B.shop,B.fine); hide(B.dbl,B.keep,B.next,B.revealAll);
   }
 
+  // ── scratch sound: two layers of filtered noise, synthesised on the fly (no audio files).
+  //    The hiss follows how fast the finger moves; random short grains on top give the coin-on-latex crackle.
+  var AC=null, hiss=null, hissFilter=null, crackle=null, sndP=null, sndT=0;
+  function audioInit(){
+    if(AC){ if(AC.state==='suspended') AC.resume(); return; }
+    var Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
+    try{ AC=new Ctx(); }catch(_){ return; }
+    var len=AC.sampleRate*2, buf=AC.createBuffer(1,len,AC.sampleRate), d=buf.getChannelData(0);
+    for(var i=0;i<len;i++) d[i]=Math.random()*2-1;
+    function layer(hpHz,bpHz,q){
+      var src=AC.createBufferSource(); src.buffer=buf; src.loop=true;
+      var hp=AC.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=hpHz;
+      var bp=AC.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=bpHz; bp.Q.value=q;
+      var g=AC.createGain(); g.gain.value=0;
+      src.connect(hp); hp.connect(bp); bp.connect(g); g.connect(AC.destination); src.start();
+      return {gain:g.gain, filter:bp.frequency};
+    }
+    var a=layer(900,2600,.9), b=layer(2500,5200,1.2);
+    hiss=a.gain; hissFilter=a.filter; crackle=b.gain;
+    if(AC.state==='suspended') AC.resume();
+  }
+  function scratchSound(p){
+    if(!AC||!hiss) return;
+    var now=performance.now(), t=AC.currentTime;
+    if(sndP){
+      var v=Math.hypot(p.x-sndP.x,p.y-sndP.y)/Math.max(8,now-sndT);   // px per ms
+      var g=Math.min(.5,v*.9);
+      hiss.cancelScheduledValues(t); hiss.setTargetAtTime(g,t,.012); hiss.setTargetAtTime(0,t+.07,.05);   // fades if the finger stops
+      hissFilter.setTargetAtTime(1800+Math.min(3000,v*2500),t,.03);
+      if(Math.random()<Math.min(.7,.15+v*.7)){ crackle.cancelScheduledValues(t); crackle.setValueAtTime(Math.min(.35,.1+v*.3),t); crackle.exponentialRampToValueAtTime(.001,t+.025+Math.random()*.04); }
+    }
+    sndP=p; sndT=now;
+  }
+  function scratchQuiet(){ sndP=null; if(AC&&hiss){ var t=AC.currentTime; hiss.cancelScheduledValues(t); hiss.setTargetAtTime(0,t,.04); } }
+  // browsers only let audio start after a tap — the first scratch (or its release) unlocks it
+  ['touchend','click'].forEach(function(ev){ document.addEventListener(ev,function(){ if(AC&&AC.state==='suspended') AC.resume(); },{capture:true,passive:true}); });
+
   // scratching — the card sinks toward the finger while you scratch, springs back when you lift
   function pressAt(u){ if(REDUCED) return; press.b=u.nx*MAXP; press.a=-u.ny*MAXP; press.s=.985; hover.a=0; hover.b=0; }
   function release(){ press.a=0; press.b=0; press.s=1; kick(); }
-  foil.addEventListener('pointerdown',function(e){ if(done) return; scratching=true; try{foil.setPointerCapture(e.pointerId)}catch(_){} var p=foilPos(e); pressAt(p.u); erase(p); kick(); if(!touched){touched=true; show(B.revealAll); result.innerHTML='<div class="sm">Keep scratching…</div>';} });
-  foil.addEventListener('pointermove',function(e){ if(!scratching) return; var p=foilPos(e); pressAt(p.u); erase(p); kick(); if(++moved%5===0) check(); });
-  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){ foil.addEventListener(ev,function(){ if(scratching){ scratching=false; release(); check(); } }); });
+  foil.addEventListener('pointerdown',function(e){ if(done) return; scratching=true; try{foil.setPointerCapture(e.pointerId)}catch(_){} audioInit(); var p=foilPos(e); pressAt(p.u); erase(p); scratchSound(p); kick(); if(!touched){touched=true; show(B.revealAll); result.innerHTML='<div class="sm">Keep scratching…</div>';} });
+  foil.addEventListener('pointermove',function(e){ if(!scratching) return; var p=foilPos(e); pressAt(p.u); erase(p); scratchSound(p); kick(); if(++moved%5===0) check(); });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){ foil.addEventListener(ev,function(){ if(scratching){ scratching=false; release(); scratchQuiet(); check(); } }); });
 
   B.revealAll.addEventListener('click',revealAll);
   B.next.addEventListener('click',function(){ lede.textContent='Scratch the panels. Match three the same to win.'; loadCard(1); });
