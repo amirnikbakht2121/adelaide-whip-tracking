@@ -25,20 +25,29 @@
   .rule{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 10px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warm-grey)}
   .rule b{color:var(--pink)}
   .gridwrap{position:relative;touch-action:none;border-radius:16px;overflow:hidden}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px;background:var(--sky-mid);border-radius:16px}
-  .cell{aspect-ratio:1;border-radius:12px;background:var(--sky-soft);display:flex;align-items:center;justify-content:center;font-size:32px;padding:4px;line-height:1;position:relative;transition:box-shadow .25s,background .25s}
-  .cell.pct{background:var(--pink)}
-  .cell.pct .num{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:30px;letter-spacing:-.01em;color:#fff;line-height:1;text-align:center}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px;background:#C9E3F2;border-radius:16px}
+  .cell{aspect-ratio:1;border-radius:14px;background:linear-gradient(180deg,#F7FBFE 0%,#DDEEF8 100%);box-shadow:0 1px 0 #fff inset,0 3px 8px rgba(26,143,191,.14);display:flex;align-items:center;justify-content:center;padding:4px;line-height:1;position:relative;transition:box-shadow .25s}
+  .cell.pct{background:linear-gradient(180deg,#EC90AB 0%,#D9648A 100%);box-shadow:0 0 0 2.5px #fff inset,0 3px 8px rgba(224,117,148,.35);overflow:hidden}
+  .cell.pct::before{content:"";position:absolute;inset:2.5px 2.5px auto 2.5px;height:42%;border-radius:12px 12px 40% 40%;background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,0));pointer-events:none}
+  .cell.pct .num{position:relative;font-family:Fraunces,Georgia,serif;font-weight:700;font-size:30px;letter-spacing:-.01em;color:#fff;line-height:1;text-align:center}
   .cell.pct .num small{display:block;font:700 10px Inter,sans-serif;letter-spacing:.16em;margin-top:3px;opacity:.92}
-  .cell .tile{display:flex;flex-direction:column;align-items:center;gap:4px}
-  .cell .tile svg{width:42px;height:42px;display:block;color:var(--blue);fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-  .cell .tile svg.dim{color:var(--warm-grey)}
-  .cell .tile svg text{fill:currentColor;stroke:none;font:800 8.5px Inter,sans-serif}
+  .cell .tile{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .cell .tile svg{width:44px;height:44px;display:block;overflow:visible;filter:drop-shadow(0 2px 2px rgba(26,143,191,.28))}
+  .cell .tile svg .under *{fill:#fff;stroke:#fff;stroke-width:4.6;stroke-linejoin:round;stroke-linecap:round;paint-order:stroke}
+  .cell .tile svg .under .txt{display:none}
+  .cell .tile svg .over .body{fill:#3AB0F8;stroke:#1090E0;stroke-width:1.4;stroke-linejoin:round}
+  .cell .tile svg .over .detail,.cell .tile svg .over .hole{fill:#fff;stroke:#1090E0;stroke-width:1}
+  .cell .tile svg .over .wheel{fill:#1090E0}
+  .cell .tile svg .over .hub{fill:#fff}
+  .cell .tile svg .over .txt{fill:#fff;font:800 9.2px Inter,sans-serif;letter-spacing:-.02em}
+  .cell .tile svg .over .accent{fill:none;stroke:var(--pink);stroke-width:1.8;stroke-linecap:round}
+  .cell .tile svg .over .dim{fill:#E6ECF1;stroke:var(--warm-grey)}
+  .cell .tile svg .over .x{fill:none;stroke:var(--warm-grey);stroke-width:1.8;stroke-linecap:round}
   .cell .tile img{height:54px;width:auto;display:block;filter:drop-shadow(0 2px 3px rgba(28,28,28,.18))}
-  .cell .tile b{font:700 9.5px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);text-align:center;line-height:1.15}
-  .cell.win{background:#FFF1F5;box-shadow:0 0 0 3px var(--pink) inset}
+  .cell .tile b{font:700 9.5px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#2A6F8F;text-align:center;line-height:1.15}
+  .cell.win{box-shadow:0 1px 0 #fff inset,0 0 0 3px var(--pink),0 3px 10px rgba(26,143,191,.2)}
   .cell.win .tile{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
-  .cell.pct.win{background:var(--pink);box-shadow:0 0 0 3px #fff inset,0 0 0 6px var(--pink) inset}
+  .cell.pct.win{box-shadow:0 0 0 2.5px #fff inset,0 0 0 3px var(--pink),0 3px 10px rgba(224,117,148,.45)}
   .cell.pct.win .num{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
   canvas.foil{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
   canvas.foil.gone{pointer-events:none;opacity:0;transition:opacity .35s}
@@ -115,18 +124,18 @@
   // ── Scripted cards. Symbol POSITIONS are shuffled per visit; the OUTCOME is fixed
   //    (no three-of-a-kind → three 10% → two cylinders and a miss). The last screen says so.
   // Prize tiles a real card would show (four prizes + a blank). Only 10% ever completes a triple.
-  var SVG='<svg viewBox="0 0 24 24" aria-hidden="true"';
-  var ICONS = {
-    van:   SVG+'><path d="M2 15.5V8a1 1 0 0 1 1-1h10.5v8.5M2 15.5h2.7M8.3 15.5h6.9"/><path d="M13.5 10h3.6a1 1 0 0 1 .8.4l2.6 3.3a.9.9 0 0 1 .2.6v1.2h-1.9"/><circle cx="6.5" cy="17.4" r="1.8"/><circle cx="17" cy="17.4" r="1.8"/><path d="M5 10.5h5"/></svg>',
-    tag:   SVG+'><path d="M8.2 4.5H19a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H8.2l-5.3-6.7a1.3 1.3 0 0 1 0-1.6Z"/><circle cx="7.2" cy="12" r="1"/><text x="15.1" y="15" text-anchor="middle">$5</text></svg>',
-    blank: SVG+' class="dim"><circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'
+  var ICO = {
+    van:   '<path class="body" d="M4 8.2a1.7 1.7 0 0 1 1.7-1.7H15v10H4z"/><path class="body" d="M15 10h3.3a1.2 1.2 0 0 1 .9.4l2.7 3.2c.2.2.3.5.3.8v1.2a.9.9 0 0 1-.9.9H15z"/><path class="detail" d="M16.4 11.3h2l1.9 2.3h-3.9z"/><circle class="wheel" cx="8" cy="17.3" r="2.1"/><circle class="wheel" cx="18.4" cy="17.3" r="2.1"/><circle class="hub" cx="8" cy="17.3" r=".75"/><circle class="hub" cx="18.4" cy="17.3" r=".75"/><path class="accent" d="M1 10.4h2M1.6 13.4h1.4"/>',
+    tag:   '<path class="body" d="M8.6 4.5h11.2a1.7 1.7 0 0 1 1.7 1.7v11.6a1.7 1.7 0 0 1-1.7 1.7H8.6L2.9 12.9a1.3 1.3 0 0 1 0-1.8z"/><circle class="hole" cx="6.3" cy="12" r=".95"/><text class="txt" x="15.3" y="15.4" text-anchor="middle">$5</text>',
+    blank: '<circle class="body dim" cx="12" cy="12" r="8.5"/><path class="x" d="M9 9l6 6M15 9l-6 6"/>'
   };
+  function sticker(n){ return '<svg viewBox="0 0 24 24" aria-hidden="true"><g class="under">'+ICO[n]+'</g><g class="over">'+ICO[n]+'</g></svg>'; }
   var TILES = {
     '10%':  { pct:true, big:'10%', sub:'OFF' },
-    'DEL':  { svg:ICONS.van,   lbl:'Free delivery' },
-    'FIVE': { svg:ICONS.tag,   lbl:'$5 off' },
+    'DEL':  { svg:sticker('van'),   lbl:'Free delivery' },
+    'FIVE': { svg:sticker('tag'),   lbl:'$5 off' },
     'CYL':  { img:'https://www.adelaidewhip.com/cdn/shop/files/strawberry660white.png', lbl:'Free cylinder' },
-    'X':    { svg:ICONS.blank, lbl:'No prize' }
+    'X':    { svg:sticker('blank'), lbl:'No prize' }
   };
   var CARDS = [
     { prize:'10% off', pool:['10%','10%','DEL','DEL','FIVE','FIVE','CYL','CYL','X'], win:null,
