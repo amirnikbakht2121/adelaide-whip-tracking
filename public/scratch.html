@@ -16,13 +16,15 @@
   html{margin:0;min-height:100%;background:#9FD9F7;overscroll-behavior:none;-webkit-overflow-scrolling:auto}
   body{margin:0;min-height:100dvh;overscroll-behavior:none}
   body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:radial-gradient(120% 60% at 50% -10%,rgba(43,192,255,.55) 0%,rgba(43,192,255,0) 60%),radial-gradient(90% 40% at 100% 100%,rgba(255,209,102,.45) 0%,rgba(255,209,102,0) 60%),radial-gradient(70% 35% at 0% 95%,rgba(224,117,148,.22) 0%,rgba(224,117,148,0) 60%),linear-gradient(180deg,#9FD9F7 0%,#C9E8F8 40%,#FBF1DA 100%);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;padding:26px 18px 48px;overflow-x:hidden}
-  /* the wordmark embossed into the page ground: three copies of the same alpha mask — light rim toward the lamp,
-     shadow rim away from it, a faintly lighter body on top. Tone-on-tone, so it sits in whatever colour the page is. */
-  .mark{--ex:-1.6px;--ey:-1.6px;position:relative;width:min(272px,72vw);aspect-ratio:1197/526;margin:2px 0 12px;pointer-events:none}
-  .mark i{position:absolute;inset:0;display:block;-webkit-mask:url(/wordmark.png) center/contain no-repeat;mask:url(/wordmark.png) center/contain no-repeat}
-  .mark .hi{background:rgba(255,255,255,.8);transform:translate(var(--ex),var(--ey))}
-  .mark .sh{background:rgba(8,58,98,.28);transform:translate(calc(var(--ex) * -1),calc(var(--ey) * -1))}
-  .mark .bd{background:rgba(255,255,255,.16)}
+  /* E2 · the real two-blue wordmark, bevelled and lifted off the page: a blurred ground shadow, a dark rim away from
+     the lamp, a white rim toward it, and the logo itself on top. --ex/--ey follow the same lamp as the foil. */
+  .mark{--ex:-1.3px;--ey:-1.3px;position:relative;width:min(272px,72vw);aspect-ratio:1197/526;margin:2px 0 12px;pointer-events:none}
+  .mark i,.mark img{position:absolute;inset:0;display:block;width:100%;height:100%}
+  .mark i{-webkit-mask:url(/wordmark.png) center/contain no-repeat;mask:url(/wordmark.png) center/contain no-repeat}
+  .mark img{object-fit:contain}
+  .mark .drop{background:rgba(6,50,90,.4);transform:translate(0,6px);filter:blur(6px)}
+  .mark .sh{background:rgba(6,50,90,.55);transform:translate(calc(var(--ex) * -1),calc(var(--ey) * -1))}
+  .mark .hi{background:rgba(255,255,255,.95);transform:translate(var(--ex),var(--ey))}
   h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:clamp(28px,7vw,36px);line-height:1.08;margin:0 0 8px;text-align:center;letter-spacing:-.01em;text-wrap:balance}
   .lede{margin:0 0 18px;color:var(--ink-soft);font-size:15px;text-align:center;max-width:36ch;min-height:1.4em}
   .step{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);text-align:center;margin:0 0 10px}
@@ -96,7 +98,7 @@
 </style>
 </head>
 <body>
-  <div class="mark" id="mark" role="img" aria-label="Adelaide Whip"><i class="hi"></i><i class="sh"></i><i class="bd"></i></div>
+  <div class="mark" id="mark" role="img" aria-label="Adelaide Whip"><i class="drop"></i><i class="sh"></i><i class="hi"></i><img src="/wordmark.png" alt="" draggable="false"></div>
   <h1 id="title">Your scratchie's here.</h1>
   <p class="lede" id="lede">Scratch the panels. Match three the same to win.</p>
 
@@ -323,7 +325,7 @@
     var sx=(-tilt.b*1.2).toFixed(1), sy=(18-tilt.a*1.1).toFixed(1);
     card.style.boxShadow=sx+'px '+sy+'px 50px rgba(26,143,191,.18), 0 1px 0 rgba(28,28,28,.08)';
     var Lx=(lx-.5)*2.8-.7, Ly=(ly-.5)*2.8-.7, ang=Math.atan2(-Lx,Ly)*180/Math.PI, Ln=Math.hypot(Lx,Ly)||1;
-    mark.style.setProperty('--ex',(Lx/Ln*2.2).toFixed(2)+'px'); mark.style.setProperty('--ey',(Ly/Ln*2.2).toFixed(2)+'px');
+    mark.style.setProperty('--ex',(Lx/Ln*1.8).toFixed(2)+'px'); mark.style.setProperty('--ey',(Ly/Ln*1.8).toFixed(2)+'px');
     shade.style.background='linear-gradient('+ang.toFixed(1)+'deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 46%, rgba(10,35,70,.075) 100%)';
   }
 
