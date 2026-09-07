@@ -59,6 +59,8 @@
   .cell.pct.win .num{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
   canvas.foil{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
   canvas.foil.gone{pointer-events:none;opacity:0;transition:opacity .35s}
+  .start{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);appearance:none;border:0;background:var(--ink);color:#fff;font:600 13.5px Inter,sans-serif;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 8px 24px rgba(0,20,40,.35);animation:nudge 1.6s ease-in-out infinite}
+  @keyframes nudge{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.05)}}
   .result{margin:12px 0 0;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px}
   .result .big{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:26px;line-height:1.1}
   .result .big.pink{color:var(--pink);font-size:30px}
@@ -72,6 +74,7 @@
   .btn.small{height:40px;font-size:13.5px}
   .btn:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
   .hidden{display:none!important}
+  .dbg{margin:10px 0 0;font:500 11px ui-monospace,Menlo,monospace;color:var(--ink-soft);background:rgba(255,255,255,.7);border-radius:8px;padding:6px 10px;text-align:center;line-height:1.5;max-width:min(340px,100%)}
   .tiltbtn{appearance:none;border:0;background:rgba(255,255,255,.72);color:var(--blue);font:600 12.5px Inter,sans-serif;border-radius:999px;padding:9px 16px;margin-top:14px;cursor:pointer;box-shadow:0 1px 0 var(--line),0 4px 14px rgba(26,143,191,.12);max-width:min(340px,100%);text-align:center;line-height:1.35}
   .code{margin-top:2px;background:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 0 var(--line),0 6px 18px rgba(28,28,28,.06)}
   .code b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:22px;letter-spacing:.14em}
@@ -81,7 +84,7 @@
   .pop{animation:pop .45s cubic-bezier(.22,1,.36,1) both}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
   .shake{animation:shake .35s ease-in-out}
-  @media (prefers-reduced-motion:reduce){.pop,.shake,.cell.win .tile,.cell.pct.win .num{animation:none}canvas.foil.gone{transition:none}}
+  @media (prefers-reduced-motion:reduce){.pop,.shake,.cell.win .tile,.cell.pct.win .num,.start{animation:none}canvas.foil.gone{transition:none}}
 </style>
 </head>
 <body>
@@ -96,14 +99,16 @@
       <div class="gridwrap" id="gridwrap">
         <div class="grid" id="grid"></div>
         <canvas class="foil" id="foil" aria-label="Scratch the panels" role="img"></canvas>
+        <button class="start hidden" id="start">Tap to start</button>
       </div>
       <div class="result" id="result"><div class="sm">Use a finger or your mouse.</div></div>
       <div class="shade" id="shade"></div>
     </div>
   </div>
   <button class="tiltbtn hidden" id="tiltBtn">Turn on tilt</button>
+  <p class="dbg hidden" id="dbg"></p>
 
-  <div class="actions">
+  <div class="actions" id="actions">
     <button class="btn ghost small hidden" id="revealAll">Reveal the rest</button>
     <button class="btn primary hidden" id="next">Next card</button>
     <button class="btn pink hidden" id="double">Double down or nothing</button>
@@ -295,7 +300,6 @@
     idleAmp+=(wantIdle-idleAmp)*.04;
     var t=now/1000, ia=Math.sin(t*.85)*4.5*idleAmp, ib=Math.sin(t*.62+1.1)*6.5*idleAmp;
     var ta=clamp(gyro.a+hover.a+press.a+ia,-LIM,LIM), tb=clamp(gyro.b+hover.b+press.b+ib,-LIM,LIM), ts=press.s;
-    if(REDUCED){ ta=0; tb=0; ts=1; }
     tilt.a+=(ta-tilt.a)*.16; tilt.b+=(tb-tilt.b)*.16; tilt.s+=(ts-tilt.s)*.22;
     var settled=Math.abs(ta-tilt.a)<.02&&Math.abs(tb-tilt.b)<.02&&Math.abs(ts-tilt.s)<.001;
     if(settled){ tilt.a=ta; tilt.b=tb; tilt.s=ts; }
@@ -344,29 +348,33 @@
     lastGyroAt=performance.now();
     kick();
   }
-  var tiltBtn=$('tiltBtn'), gyroOn=false;
+  var tiltBtn=$('tiltBtn'), startBtn=$('start'), gyroOn=false, gyroAsked=false, gyroState='unsupported';
   var needsPerm=('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission==='function');
-  function startGyro(){ if(gyroOn) return; gyroOn=true; window.addEventListener('deviceorientation',onOri); hide(tiltBtn); }
+  function startGyro(){ if(gyroOn) return; gyroOn=true; gyroState='on'; window.addEventListener('deviceorientation',onOri); hide(tiltBtn); }
   function enableGyro(){
-    if(REDUCED||!('DeviceOrientationEvent' in window)) return;
+    if(REDUCED||gyroOn||gyroAsked||!('DeviceOrientationEvent' in window)) return;
     if(needsPerm){
+      gyroAsked=true;
       DeviceOrientationEvent.requestPermission().then(function(st){
         if(st==='granted') startGyro();
-        else { show(tiltBtn); tiltBtn.textContent='Tilt is blocked — allow Motion & Orientation for Safari in Settings, then reload'; }
-      }).catch(function(){ show(tiltBtn); });
+        else { gyroState='denied'; show(tiltBtn); tiltBtn.textContent='Tilt is blocked — allow Motion & Orientation for Safari in Settings, then reload'; }
+      }).catch(function(){ gyroState='needs tap'; show(tiltBtn); });
     } else startGyro();
   }
-  if(needsPerm && !REDUCED){
-    // iPhone: the browser only allows motion after a tap. Ask on the first tap anywhere; the button is the fallback.
-    show(tiltBtn);
-    var asked=false, ask=function(){ if(asked||gyroOn) return; asked=true; enableGyro(); };
+  if('DeviceOrientationEvent' in window) gyroState = REDUCED ? 'off (Reduce Motion)' : needsPerm ? 'needs tap' : 'on';
+  if(needsPerm){
+    // iPhone: motion AND sound only unlock on a tap release, so the first card gets a "Tap to start" pill.
+    // Any tap anywhere does the same job (the pill is the invitation, not a gate).
+    show(startBtn);
+    var ask=function(){ enableGyro(); hide(startBtn); };
     document.addEventListener('touchend',ask,{capture:true,passive:true}); document.addEventListener('click',ask,true);
-    tiltBtn.addEventListener('click',function(){ enableGyro(); });
+    startBtn.addEventListener('click',function(){ audioInit(); enableGyro(); hide(startBtn); });
+    tiltBtn.addEventListener('click',function(){ gyroAsked=false; enableGyro(); });
   } else enableGyro();
   document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') base0=null; });
 
   // hover (desktop only — a light press that follows the pointer)
-  if(CAN_HOVER && !REDUCED){
+  if(CAN_HOVER){
     window.addEventListener('pointermove',function(e){ if(scratching||e.pointerType==='touch') return; var u=unproject(e.clientX,e.clientY); hover.b=u.nx*MAXH; hover.a=-u.ny*MAXH; kick(); });
     document.documentElement.addEventListener('mouseleave',function(){ hover.a=0; hover.b=0; kick(); });
   }
@@ -380,6 +388,10 @@
     requestAnimationFrame(function(){ layout(); resetMask(); foil.classList.remove('gone'); lastLx=-1; dirty=true; kick(); });
   }
 
+  // bring the buttons into view (first scratch, and whenever a card is read) — scratch positions are
+  // re-read from the live layout on every event, so the page can move under the finger safely
+  var actions=$('actions');
+  function showButtons(){ requestAnimationFrame(function(){ var b=actions.getBoundingClientRect().bottom+24; if(b>innerHeight) window.scrollBy({top:b-innerHeight,left:0,behavior:'smooth'}); }); }
   function erase(p){ mctx.beginPath(); mctx.arc(p.x,p.y,18,0,Math.PI*2); mctx.fill(); dirty=true; }
 
   // One sheet: once ~55% of the foil is gone, the rest lifts off and the card is read.
@@ -408,13 +420,14 @@
     if(cardDef.after==='next'){ show(B.next); }
     else if(cardDef.after==='double'){ lede.textContent='Feeling lucky? Double down… or bank the 10%.'; show(B.dbl,B.keep); }
     else finish();
+    showButtons();
   }
 
   function finish(){
     step.textContent='Done'; lede.textContent='Your code works on anything in the store.';
     B.codeText.textContent=CODE; B.shop.href=SHOP;
     B.fine.textContent='Confession: everyone wins the 10% — we just wanted to see you scratch. One use per customer'+(EXP?', valid until '+EXP:'')+'.';
-    show(B.codeBox,B.shop,B.fine); hide(B.dbl,B.keep,B.next,B.revealAll);
+    show(B.codeBox,B.shop,B.fine); hide(B.dbl,B.keep,B.next,B.revealAll); showButtons();
   }
 
   // ── scratch sound: two layers of filtered noise, synthesised on the fly (no audio files).
@@ -443,21 +456,21 @@
     var now=performance.now(), t=AC.currentTime;
     if(sndP){
       var v=Math.hypot(p.x-sndP.x,p.y-sndP.y)/Math.max(8,now-sndT);   // px per ms
-      var g=Math.min(.5,v*.9);
+      var g=Math.min(.22,v*.4);
       hiss.cancelScheduledValues(t); hiss.setTargetAtTime(g,t,.012); hiss.setTargetAtTime(0,t+.07,.05);   // fades if the finger stops
       hissFilter.setTargetAtTime(1800+Math.min(3000,v*2500),t,.03);
-      if(Math.random()<Math.min(.7,.15+v*.7)){ crackle.cancelScheduledValues(t); crackle.setValueAtTime(Math.min(.35,.1+v*.3),t); crackle.exponentialRampToValueAtTime(.001,t+.025+Math.random()*.04); }
+      if(Math.random()<Math.min(.7,.15+v*.7)){ crackle.cancelScheduledValues(t); crackle.setValueAtTime(Math.min(.16,.05+v*.14),t); crackle.exponentialRampToValueAtTime(.001,t+.025+Math.random()*.04); }
     }
     sndP=p; sndT=now;
   }
   function scratchQuiet(){ sndP=null; if(AC&&hiss){ var t=AC.currentTime; hiss.cancelScheduledValues(t); hiss.setTargetAtTime(0,t,.04); } }
   // browsers only let audio start after a tap — the first scratch (or its release) unlocks it
-  ['touchend','click'].forEach(function(ev){ document.addEventListener(ev,function(){ if(AC&&AC.state==='suspended') AC.resume(); },{capture:true,passive:true}); });
+  ['touchend','click'].forEach(function(ev){ document.addEventListener(ev,function(){ audioInit(); },{capture:true,passive:true}); });
 
   // scratching — the card sinks toward the finger while you scratch, springs back when you lift
-  function pressAt(u){ if(REDUCED) return; press.b=u.nx*MAXP; press.a=-u.ny*MAXP; press.s=.985; hover.a=0; hover.b=0; }
+  function pressAt(u){ press.b=u.nx*MAXP; press.a=-u.ny*MAXP; press.s=.985; hover.a=0; hover.b=0; }
   function release(){ press.a=0; press.b=0; press.s=1; kick(); }
-  foil.addEventListener('pointerdown',function(e){ if(done) return; scratching=true; try{foil.setPointerCapture(e.pointerId)}catch(_){} audioInit(); var p=foilPos(e); pressAt(p.u); erase(p); scratchSound(p); kick(); if(!touched){touched=true; show(B.revealAll); result.innerHTML='<div class="sm">Keep scratching…</div>';} });
+  foil.addEventListener('pointerdown',function(e){ if(done) return; scratching=true; try{foil.setPointerCapture(e.pointerId)}catch(_){} audioInit(); var p=foilPos(e); pressAt(p.u); erase(p); scratchSound(p); kick(); if(!touched){touched=true; show(B.revealAll); result.innerHTML='<div class="sm">Keep scratching…</div>'; showButtons();} });
   foil.addEventListener('pointermove',function(e){ if(!scratching) return; var p=foilPos(e); pressAt(p.u); erase(p); scratchSound(p); kick(); if(++moved%5===0) check(); });
   ['pointerup','pointercancel','pointerleave'].forEach(function(ev){ foil.addEventListener(ev,function(){ if(scratching){ scratching=false; release(); scratchQuiet(); check(); } }); });
 
@@ -469,6 +482,10 @@
   var lastW=0;
   window.addEventListener('resize',function(){ var w=wrap.offsetWidth; if(w===lastW) return; lastW=w; if(!done){ layout(); resetMask(); lastLx=-1; dirty=true; kick(); } });
 
+  // ?debug=1 → a readout of what this phone reports, for troubleshooting from a screenshot
+  if(q.get('debug')){ var dbg=$('dbg'); show(dbg); setInterval(function(){
+    dbg.textContent='reduce-motion: '+(REDUCED?'ON':'off')+' · gyro: '+gyroState+' · sound: '+(AC?AC.state:'not started')+' · tilt '+tilt.a.toFixed(1)+'/'+tilt.b.toFixed(1)+' · '+(gyroOn?'gyro events: '+(performance.now()-lastGyroAt<1500?'live':'none'):'')+' · '+navigator.userAgent.replace(/^.*\((.*?)\).*$/,'$1').slice(0,40);
+  },500); }
   // test hooks (harmless): window.__scratch.revealAll(), .tilt(a,b), .scratchAt(x,y)
   window.__scratch = { revealAll: revealAll, tilt:function(a,b){ gyro.a=a; gyro.b=b; kick(); }, scratchAt:function(x,y){ erase({x:x,y:y}); kick(); } };
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){ lastW=wrap.offsetWidth; loadCard(0); });
