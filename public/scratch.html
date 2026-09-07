@@ -27,8 +27,17 @@
   .gridwrap{position:relative;touch-action:none;border-radius:16px;overflow:hidden}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px;background:#C9E3F2;border-radius:16px}
   .cell{aspect-ratio:1;border-radius:14px;background:linear-gradient(180deg,#F7FBFE 0%,#DDEEF8 100%);box-shadow:0 1px 0 #fff inset,0 3px 8px rgba(26,143,191,.14);display:flex;align-items:center;justify-content:center;padding:4px;line-height:1;position:relative;transition:box-shadow .25s}
-  .cell.pct{background:linear-gradient(180deg,#EC90AB 0%,#D9648A 100%);box-shadow:0 0 0 2.5px #fff inset,0 3px 8px rgba(224,117,148,.35);overflow:hidden}
-  .cell.pct::before{content:"";position:absolute;inset:2.5px 2.5px auto 2.5px;height:42%;border-radius:12px 12px 40% 40%;background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,0));pointer-events:none}
+  /* prize tiles: full-colour gradients with a gloss; each carries its own ring colour (--c) and shadow (--sh) */
+  .cell.hue{overflow:hidden;box-shadow:0 0 0 2.5px #fff inset,0 3px 8px var(--sh)}
+  .cell.hue::before{content:"";position:absolute;inset:2.5px 2.5px auto 2.5px;height:42%;border-radius:12px 12px 40% 40%;background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,0));pointer-events:none}
+  .cell.hue .tile b{color:#fff;text-shadow:0 1px 0 rgba(0,40,70,.18)}
+  .cell.hue .tile svg,.cell.hue .tile img{filter:drop-shadow(0 2px 2px rgba(0,40,70,.28))}
+  .cell.hue .tile{position:relative}
+  .cell.pct{--c:#E07594;--sh:rgba(224,117,148,.38);background:linear-gradient(180deg,#EC90AB 0%,#D9648A 100%)}
+  .cell.c-del{--c:#1A8FBF;--sh:rgba(26,143,191,.38);background:linear-gradient(180deg,#4DBCF9 0%,#1E96CC 100%)}
+  .cell.c-five{--c:#F2B33D;--sh:rgba(242,179,61,.42);background:linear-gradient(180deg,#FFD871 0%,#F5B53A 100%)}
+  .cell.c-five .tile b{color:#5B4300;text-shadow:none}
+  .cell.c-cyl{--c:#2BB5A8;--sh:rgba(43,181,168,.4);background:linear-gradient(180deg,#5FD6C9 0%,#2AB0A3 100%)}
   .cell.pct .num{position:relative;font-family:Fraunces,Georgia,serif;font-weight:700;font-size:30px;letter-spacing:-.01em;color:#fff;line-height:1;text-align:center}
   .cell.pct .num small{display:block;font:700 10px Inter,sans-serif;letter-spacing:.16em;margin-top:3px;opacity:.92}
   .cell .tile{display:flex;flex-direction:column;align-items:center;gap:5px}
@@ -44,10 +53,9 @@
   .cell .tile svg .over .dim{fill:#E6ECF1;stroke:var(--warm-grey)}
   .cell .tile svg .over .x{fill:none;stroke:var(--warm-grey);stroke-width:1.8;stroke-linecap:round}
   .cell .tile img{height:58px;width:auto;display:block;filter:drop-shadow(0 2px 2px rgba(26,143,191,.28))}
-  .cell .tile b{font:700 9.5px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#2A6F8F;text-align:center;line-height:1.15}
-  .cell.win{box-shadow:0 1px 0 #fff inset,0 0 0 3px var(--pink),0 3px 10px rgba(26,143,191,.2)}
+  .cell .tile b{font:700 9.5px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--warm-grey);text-align:center;line-height:1.15}
+  .cell.win{box-shadow:0 0 0 2.5px #fff inset,0 0 0 3px var(--c,var(--pink)),0 3px 10px var(--sh,rgba(26,143,191,.2))}
   .cell.win .tile{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
-  .cell.pct.win{box-shadow:0 0 0 2.5px #fff inset,0 0 0 3px var(--pink),0 3px 10px rgba(224,117,148,.45)}
   .cell.pct.win .num{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
   canvas.foil{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
   canvas.foil.gone{pointer-events:none;opacity:0;transition:opacity .35s}
@@ -64,6 +72,7 @@
   .btn.small{height:40px;font-size:13.5px}
   .btn:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
   .hidden{display:none!important}
+  .tiltbtn{appearance:none;border:0;background:rgba(255,255,255,.72);color:var(--blue);font:600 12.5px Inter,sans-serif;border-radius:999px;padding:9px 16px;margin-top:14px;cursor:pointer;box-shadow:0 1px 0 var(--line),0 4px 14px rgba(26,143,191,.12);max-width:min(340px,100%);text-align:center;line-height:1.35}
   .code{margin-top:2px;background:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 0 var(--line),0 6px 18px rgba(28,28,28,.06)}
   .code b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:22px;letter-spacing:.14em}
   .code button{appearance:none;border:0;background:var(--sky-soft);color:var(--blue);font:600 13px Inter,sans-serif;border-radius:10px;padding:9px 12px;cursor:pointer}
@@ -92,6 +101,7 @@
       <div class="shade" id="shade"></div>
     </div>
   </div>
+  <button class="tiltbtn hidden" id="tiltBtn">Turn on tilt</button>
 
   <div class="actions">
     <button class="btn ghost small hidden" id="revealAll">Reveal the rest</button>
@@ -132,9 +142,9 @@
   function sticker(n){ return '<svg viewBox="0 0 24 24" aria-hidden="true"><g class="under">'+ICO[n]+'</g><g class="over">'+ICO[n]+'</g></svg>'; }
   var TILES = {
     '10%':  { pct:true, big:'10%', sub:'OFF' },
-    'DEL':  { svg:sticker('van'),   lbl:'Free delivery' },
-    'FIVE': { svg:sticker('tag'),   lbl:'$5 off' },
-    'CYL':  { img:'/cylinder-sticker.png', lbl:'Free cylinder' },
+    'DEL':  { svg:sticker('van'),   lbl:'Free delivery', cls:'c-del' },
+    'FIVE': { svg:sticker('tag'),   lbl:'$5 off',        cls:'c-five' },
+    'CYL':  { img:'/cylinder-sticker.png', lbl:'Free cylinder', cls:'c-cyl' },
     'X':    { svg:sticker('blank'), lbl:'No prize' }
   };
   var CARDS = [
@@ -154,8 +164,8 @@
     grid.innerHTML='';
     cells = symbols.map(function(s){
       var d=document.createElement('div'); d.className='cell'; var t=TILES[s];
-      if (t.pct) { d.classList.add('pct'); d.innerHTML='<span class="num">'+t.big+'<small>'+t.sub+'</small></span>'; }
-      else d.innerHTML='<span class="tile">'+(t.img?'<img src="'+t.img+'" alt="" draggable="false">':t.svg)+'<b>'+t.lbl+'</b></span>';
+      if (t.pct) { d.classList.add('pct','hue'); d.innerHTML='<span class="num">'+t.big+'<small>'+t.sub+'</small></span>'; }
+      else { if (t.cls) d.classList.add(t.cls,'hue'); d.innerHTML='<span class="tile">'+(t.img?'<img src="'+t.img+'" alt="" draggable="false">':t.svg)+'<b>'+t.lbl+'</b></span>'; }
       grid.appendChild(d); return d;
     });
   }
@@ -275,12 +285,16 @@
   //  Everything is summed, smoothed, and drives: card transform, moving shadow,
   //  a light/shade wash over the white card, and the foil sheen position.
   // ═══════════════════════════════════════════════════════════════════════════
-  var P=900, MAXG=14, MAXH=7, MAXP=11, LIM=18;
+  var P=900, MAXG=14, MAXH=10, MAXP=11, LIM=18;
   var tilt={a:0,b:0,s:1}, gyro={a:0,b:0}, hover={a:0,b:0}, press={a:0,b:0,s:1};
-  var running=false, dirty=false, lastLx=-1, lastLy=-1;
+  var running=false, dirty=false, lastLx=-1, lastLy=-1, idleAmp=0, lastGyroAt=-1e9;
   function kick(){ if(!running){ running=true; requestAnimationFrame(frame); } }
   function frame(){
-    var ta=clamp(gyro.a+hover.a+press.a,-LIM,LIM), tb=clamp(gyro.b+hover.b+press.b,-LIM,LIM), ts=press.s;
+    // ambient float: the card rocks on its own until the gyro or a finger takes over
+    var now=performance.now(), wantIdle=(!REDUCED && !scratching && now-lastGyroAt>1500)?1:0;
+    idleAmp+=(wantIdle-idleAmp)*.04;
+    var t=now/1000, ia=Math.sin(t*.85)*4.5*idleAmp, ib=Math.sin(t*.62+1.1)*6.5*idleAmp;
+    var ta=clamp(gyro.a+hover.a+press.a+ia,-LIM,LIM), tb=clamp(gyro.b+hover.b+press.b+ib,-LIM,LIM), ts=press.s;
     if(REDUCED){ ta=0; tb=0; ts=1; }
     tilt.a+=(ta-tilt.a)*.16; tilt.b+=(tb-tilt.b)*.16; tilt.s+=(ts-tilt.s)*.22;
     var settled=Math.abs(ta-tilt.a)<.02&&Math.abs(tb-tilt.b)<.02&&Math.abs(ts-tilt.s)<.001;
@@ -290,7 +304,7 @@
     applyCard(lx,ly);
     if(!done && (dirty || Math.abs(lx-lastLx)>.0015 || Math.abs(ly-lastLy)>.0015)){ renderFoil(lx,ly); lastLx=lx; lastLy=ly; }
     dirty=false;
-    if(settled) running=false; else requestAnimationFrame(frame);
+    if(settled && idleAmp<.002) running=false; else requestAnimationFrame(frame);
   }
   function applyCard(lx,ly){
     card.style.transform='rotateX('+tilt.a.toFixed(3)+'deg) rotateY('+tilt.b.toFixed(3)+'deg) scale('+tilt.s.toFixed(4)+')';
@@ -327,25 +341,34 @@
     if(ang===90){ fx=dg; fy=-db; } else if(ang===-90||ang===270){ fx=-dg; fy=db; } else { fx=db; fy=dg; }
     gyro.a=clamp(-fx,-30,30)/30*MAXG;             // top of the phone away from you → top of the card away
     gyro.b=clamp(fy,-30,30)/30*MAXG;              // right edge down → right edge away
+    lastGyroAt=performance.now();
     kick();
   }
+  var tiltBtn=$('tiltBtn'), gyroOn=false;
+  var needsPerm=('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission==='function');
+  function startGyro(){ if(gyroOn) return; gyroOn=true; window.addEventListener('deviceorientation',onOri); hide(tiltBtn); }
   function enableGyro(){
     if(REDUCED||!('DeviceOrientationEvent' in window)) return;
-    if(typeof DeviceOrientationEvent.requestPermission==='function'){
-      DeviceOrientationEvent.requestPermission().then(function(s){ if(s==='granted') window.addEventListener('deviceorientation',onOri); }).catch(function(){});
-    } else window.addEventListener('deviceorientation',onOri);
+    if(needsPerm){
+      DeviceOrientationEvent.requestPermission().then(function(st){
+        if(st==='granted') startGyro();
+        else { show(tiltBtn); tiltBtn.textContent='Tilt is blocked — allow Motion & Orientation for Safari in Settings, then reload'; }
+      }).catch(function(){ show(tiltBtn); });
+    } else startGyro();
   }
-  if('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission==='function'){
-    // iOS: needs a tap first. The first tap anywhere (the first scratch counts) asks once.
-    var asked=false, ask=function(){ if(asked) return; asked=true; enableGyro(); };
+  if(needsPerm && !REDUCED){
+    // iPhone: the browser only allows motion after a tap. Ask on the first tap anywhere; the button is the fallback.
+    show(tiltBtn);
+    var asked=false, ask=function(){ if(asked||gyroOn) return; asked=true; enableGyro(); };
     document.addEventListener('touchend',ask,{capture:true,passive:true}); document.addEventListener('click',ask,true);
+    tiltBtn.addEventListener('click',function(){ enableGyro(); });
   } else enableGyro();
   document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') base0=null; });
 
   // hover (desktop only — a light press that follows the pointer)
   if(CAN_HOVER && !REDUCED){
-    stage.addEventListener('pointermove',function(e){ if(scratching||e.pointerType!=='mouse') return; var u=unproject(e.clientX,e.clientY); hover.b=u.nx*MAXH; hover.a=-u.ny*MAXH; kick(); });
-    stage.addEventListener('pointerleave',function(){ hover.a=0; hover.b=0; kick(); });
+    window.addEventListener('pointermove',function(e){ if(scratching||e.pointerType==='touch') return; var u=unproject(e.clientX,e.clientY); hover.b=u.nx*MAXH; hover.a=-u.ny*MAXH; kick(); });
+    document.documentElement.addEventListener('mouseleave',function(){ hover.a=0; hover.b=0; kick(); });
   }
 
   function loadCard(i){
