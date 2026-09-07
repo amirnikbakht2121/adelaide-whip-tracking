@@ -6,6 +6,7 @@
 <title>Your scratchie · Adelaide Whip</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="https://www.adelaidewhip.com/cdn/shop/files/strawberry660white.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
 <style>
   :root{--cream:#FAF6EC;--sky-soft:#E8F4FA;--sky-mid:#D5EAF5;--ink:#1C1C1C;--ink-soft:#4A4744;--warm-grey:#8C857C;--blue:#1A8FBF;--pink:#E07594;--yellow:#FFD166;--cyan:#2BC0FF;--line:rgba(28,28,28,.08)}
@@ -27,6 +28,7 @@
   .cell .pct small{display:block;font:700 9px Inter,sans-serif;letter-spacing:.12em;text-align:center;margin-top:1px;opacity:.9}
   .cell .tile{display:flex;flex-direction:column;align-items:center;gap:3px}
   .cell .tile em{font-style:normal;font-size:24px;line-height:1}
+  .cell .tile img{height:40px;width:auto;display:block;filter:drop-shadow(0 2px 3px rgba(28,28,28,.18))}
   .cell .tile b{font:700 9.5px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);text-align:center;line-height:1.15}
   .cell.win{background:#FFF1F5;box-shadow:0 0 0 3px var(--pink) inset}
   .cell.win .pct{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
@@ -103,8 +105,8 @@
   var TILES = {
     '10%':  { big:'10%',  sub:'OFF',           cls:'pct' },
     '20%':  { big:'20%',  sub:'OFF',           cls:'pct blue' },
-    'DEL':  { ico:'🚚',   lbl:'Free delivery' },
-    '660':  { ico:'🫙',   lbl:'Free 660g' },
+    'DEL':  { img:'https://www.adelaidewhip.com/cdn/shop/files/strawberry660white.png', lbl:'Free small cylinder' },
+    '660':  { ico:'🎈',   lbl:'Free balloons' },
     'FIVE': { ico:'💵',   lbl:'$5 off' },
     'NOZ':  { ico:'🍓',   lbl:'Free nozzles' },
     'ICE':  { ico:'🧊',   lbl:'No prize' }
@@ -127,7 +129,7 @@
     cells = symbols.map(function(s){
       var d=document.createElement('div'); d.className='cell'; var t=TILES[s];
       if (t.cls) { var p=document.createElement('span'); p.className=t.cls; p.innerHTML=t.big+'<small>'+t.sub+'</small>'; d.appendChild(p); }
-      else d.innerHTML='<span class="tile"><em>'+t.ico+'</em><b>'+t.lbl+'</b></span>';
+      else d.innerHTML='<span class="tile">'+(t.img?'<img src="'+t.img+'" alt="" draggable="false">':'<em>'+t.ico+'</em>')+'<b>'+t.lbl+'</b></span>';
       grid.appendChild(d); return d;
     });
     revealedCells = symbols.map(function(){return false});
