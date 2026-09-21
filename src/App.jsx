@@ -330,7 +330,7 @@ export default function App() {
             zoomControl={false}
             attributionControl={false}
           >
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+            <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=cb1_2kn1_1_b8c4b9f6f001877114077a44" />
             <Marker position={[deliveryPos.lat, deliveryPos.lng]} icon={pinIcon}>
               <Popup>Delivery Location</Popup>
             </Marker>
